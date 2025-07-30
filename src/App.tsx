@@ -7,14 +7,14 @@ import { UnifiedCustomizer } from './components/UnifiedCustomizer';
 import { CardOptionSelector } from './components/CardOptionSelector';
 import { ProductConfirmationModal } from './components/ProductConfirmationModal';
 import { ShoppingCart, Heart, Camera, Palette, Gift, Instagram, MessageCircle, Mail } from 'lucide-react';
-import { assets } from './assets';
+// import { assets } from './assets';
 import { useProductWithOptions } from './hooks/useProductWithOptions';
 import { useSound } from './hooks/useSound';
 import { animations } from './utils/animations';
 import type { UploadedImage, ProductConfiguration } from './types';
 
 // Productos disponibles
-const products = Object.values(assets.products);
+// const products = Object.values(assets.products);
 
 // Función para obtener el título específico del contenido según el producto
 const getContentTitle = (product: any) => {
