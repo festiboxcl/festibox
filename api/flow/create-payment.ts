@@ -50,7 +50,7 @@ function generateSubject(items: any[]): string {
   }
 }
 
-module.exports = async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Solo permitir POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método no permitido' });

@@ -14,7 +14,7 @@ function createSignature(params: Record<string, any>, secretKey: string): string
     .digest('hex');
 }
 
-module.exports = async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Flow envía POST para confirmaciones
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método no permitido' });

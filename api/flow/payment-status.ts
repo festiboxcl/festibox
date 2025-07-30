@@ -14,7 +14,7 @@ function createSignature(params: Record<string, any>, secretKey: string): string
     .digest('hex');
 }
 
-module.exports = async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Solo permitir GET para verificar estado
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Método no permitido' });
