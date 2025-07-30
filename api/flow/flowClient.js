@@ -67,33 +67,19 @@ class FlowClient {
       }
     }
 
-    // Preparar parámetros base (ordenados alfabéticamente para facilitar debug)
+    // Replicar exactamente el comportamiento de FlowApi.class.php
+    // Línea PHP: $params = array("apiKey" => $this->apiKey) + $params;
     const params = {
-      amount: paymentData.amount,
       apiKey: this.apiKey,
-      commerceOrder: paymentData.commerceOrder,
-      currency: paymentData.currency,
-      email: paymentData.email,
-      subject: paymentData.subject,
-      urlConfirmation: paymentData.urlConfirmation,
-      urlReturn: paymentData.urlReturn
+      ...paymentData
     };
 
-    // Crear firma (excluyendo el parámetro 's' que contendrá la firma)
+    // Crear firma exactamente como en PHP
+    // Línea PHP: $params["s"] = $this->sign($params);
     const signature = this.createSignature(params);
+    params.s = signature;
 
-    // Preparar FormData para envío a Flow
-    const formData = new URLSearchParams();
-    Object.entries(params).forEach(([key, value]) => {
-      formData.append(key, value.toString());
-    });
-    formData.append('s', signature);
-    
-    // Agregar parámetros opcionales si existen
-    if (paymentData.optional) {
-      formData.append('optional', JSON.stringify(paymentData.optional));
-    }
-
+    console.log('Flow Client - Parámetros finales:', Object.keys(params).sort());
     console.log('Flow Client - Creando pago:', {
       url: `${this.baseUrl}/payment/create`,
       commerceOrder: params.commerceOrder,
@@ -101,7 +87,14 @@ class FlowClient {
       email: params.email
     });
 
-    // Enviar request a Flow API
+    // Replicar httpPost de PHP: curl_setopt($ch, CURLOPT_POSTFIELDS, $params);
+    // En PHP esto convierte automáticamente el array a form-urlencoded
+    const formData = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      formData.append(key, String(value));
+    });
+
+    // Enviar request a Flow API exactamente como en PHP
     const response = await fetch(`${this.baseUrl}/payment/create`, {
       method: 'POST',
       headers: {
@@ -120,7 +113,7 @@ class FlowClient {
       throw new Error(`Error HTTP ${response.status}: ${response.statusText} - ${responseText}`);
     }
 
-    // Parsear respuesta JSON
+    // Parsear respuesta JSON como en PHP: json_decode($response["output"], true)
     try {
       const result = JSON.parse(responseText);
       
@@ -145,18 +138,20 @@ class FlowClient {
       throw new Error('Token es requerido');
     }
 
+    // Replicar exactamente el comportamiento de FlowApi.class.php
     const params = {
       apiKey: this.apiKey,
       token: token
     };
 
+    // Crear firma exactamente como en PHP
     const signature = this.createSignature(params);
+    params.s = signature;
 
     const formData = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
-      formData.append(key, value.toString());
+      formData.append(key, String(value));
     });
-    formData.append('s', signature);
 
     const response = await fetch(`${this.baseUrl}/payment/getStatus`, {
       method: 'POST',
