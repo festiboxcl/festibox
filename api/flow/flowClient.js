@@ -2,7 +2,7 @@
 import crypto from 'crypto';
 
 class FlowClient {
-  constructor(apiKey, secretKey, baseUrl = 'https://sandbox.flow.cl/api') {
+  constructor(apiKey, secretKey, baseUrl = 'https://www.flow.cl/api') {
     if (!apiKey || !secretKey) {
       throw new Error('Flow API Key y Secret Key son requeridos');
     }
@@ -177,7 +177,7 @@ class FlowClient {
 export function createFlowClient() {
   const apiKey = process.env.FLOW_API_KEY;
   const secretKey = process.env.FLOW_SECRET_KEY;
-  const baseUrl = process.env.FLOW_BASE_URL || 'https://sandbox.flow.cl/api';
+  const baseUrl = process.env.FLOW_BASE_URL || 'https://www.flow.cl/api';
   
   if (!apiKey || !secretKey) {
     throw new Error('Variables de entorno FLOW_API_KEY y FLOW_SECRET_KEY son requeridas');
