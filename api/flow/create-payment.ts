@@ -50,7 +50,7 @@ function generateSubject(items: any[]): string {
   }
 }
 
-async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Solo permitir POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método no permitido' });
@@ -217,6 +217,3 @@ async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 }
-
-// Asegurar compatibilidad ES module
-export { handler as default };
