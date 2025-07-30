@@ -57,21 +57,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    console.log('🔍 Inicio de create-payment');
+    console.log('🔍 Variables de entorno disponibles:', {
+      hasApiKey: !!process.env.FLOW_API_KEY,
+      hasSecretKey: !!process.env.FLOW_SECRET_KEY,
+      hasBaseUrl: !!process.env.FLOW_BASE_URL,
+      apiKeyStart: process.env.FLOW_API_KEY?.substring(0, 10) + '...',
+      baseUrl: process.env.FLOW_BASE_URL
+    });
+
     // Obtener credenciales de las variables de entorno
     const apiKey = process.env.FLOW_API_KEY;
     const secretKey = process.env.FLOW_SECRET_KEY;
     const baseUrl = process.env.FLOW_BASE_URL || 'https://sandbox.flow.cl/api';
 
     if (!apiKey || !secretKey) {
-      console.error('Credenciales de Flow no configuradas');
+      console.error('❌ Credenciales de Flow no configuradas:', {
+        hasApiKey: !!apiKey,
+        hasSecretKey: !!secretKey
+      });
       return res.status(500).json({ 
         error: 'Credenciales de Flow no configuradas en el servidor' 
       });
     }
 
     const { orderDetails }: FlowPaymentRequest = req.body;
+    console.log('🔍 OrderDetails recibidos:', JSON.stringify(orderDetails, null, 2));
 
     if (!orderDetails || !orderDetails.customerEmail || !orderDetails.items?.length) {
+      console.error('❌ Datos de pedido incompletos:', {
+        hasOrderDetails: !!orderDetails,
+        hasEmail: !!orderDetails?.customerEmail,
+        hasItems: !!orderDetails?.items?.length
+      });
       return res.status(400).json({ 
         error: 'Datos de pedido incompletos' 
       });
@@ -190,10 +208,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
   } catch (error) {
-    console.error('Error en create-payment:', error);
+    console.error('❌ Error en create-payment:', error);
+    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack available');
     res.status(500).json({ 
       error: 'Error interno del servidor',
-      details: error instanceof Error ? error.message : 'Error desconocido'
+      details: error instanceof Error ? error.message : 'Error desconocido',
+      timestamp: new Date().toISOString()
     });
   }
 }
