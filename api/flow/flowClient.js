@@ -52,6 +52,14 @@ class FlowClient {
       amount: params.amount,
       apiKey: this.apiKey?.substring(0, 10) + '...'
     });
+    
+    // Log detallado de parámetros
+    console.log('Flow Client - Parámetros completos:', {
+      apiKey: this.apiKey,
+      apiKeyLength: this.apiKey?.length,
+      signature: signature,
+      formData: formData.toString()
+    });
 
     // Hacer petición a Flow
     const response = await fetch(`${this.baseUrl}/payment/create`, {
@@ -77,9 +85,22 @@ class FlowClient {
 }
 
 export function createFlowClient() {
-  const apiKey = process.env.FLOW_API_KEY;
-  const secretKey = process.env.FLOW_SECRET_KEY;
-  const baseUrl = process.env.FLOW_BASE_URL || 'https://sandbox.flow.cl/api';
+  // Obtener credenciales y limpiarlas de posibles espacios
+  const apiKey = process.env.FLOW_API_KEY?.trim();
+  const secretKey = process.env.FLOW_SECRET_KEY?.trim();
+  const baseUrl = (process.env.FLOW_BASE_URL || 'https://sandbox.flow.cl/api').trim();
+  
+  console.log('Flow Client - Variables sin procesar:', {
+    hasApiKey: !!process.env.FLOW_API_KEY,
+    hasSecretKey: !!process.env.FLOW_SECRET_KEY,
+    hasBaseUrl: !!process.env.FLOW_BASE_URL,
+  });
+  
+  console.log('Flow Client - Credenciales procesadas:', {
+    apiKey: apiKey,
+    secretKey: secretKey ? '***' : null,
+    baseUrl: baseUrl
+  });
   
   if (!apiKey || !secretKey) {
     throw new Error('Credenciales de Flow no configuradas');
