@@ -102,6 +102,34 @@ export default async function handler(req, res) {
           flowOrder: paymentStatus.flowOrder,
           amount: paymentStatus.amount
         });
+
+        // Obtener datos del pedido desde el commerceOrder
+        try {
+          const orderData = await getOrderDataFromCommerce(paymentStatus.commerceOrder);
+          
+          if (orderData) {
+            // Enviar notificaciones por email
+            const { sendOrderNotificationToAdmin, sendConfirmationToCustomer } = await import('../services/emailService.js');
+            
+            // Email al administrador con detalles del pedido
+            try {
+              await sendOrderNotificationToAdmin(orderData, paymentStatus);
+              console.log('✅ Email enviado al administrador');
+            } catch (emailError) {
+              console.error('❌ Error enviando email al administrador:', emailError);
+            }
+            
+            // Email de confirmación al cliente
+            try {
+              await sendConfirmationToCustomer(orderData, paymentStatus);
+              console.log('✅ Email de confirmación enviado al cliente');
+            } catch (emailError) {
+              console.error('❌ Error enviando email al cliente:', emailError);
+            }
+          }
+        } catch (orderError) {
+          console.error('❌ Error obteniendo datos del pedido:', orderError);
+        }
       }
 
       // Flow espera respuesta HTTP 200 para confirmar recepción
@@ -135,3 +163,65 @@ export default async function handler(req, res) {
     });
   }
 };
+
+/**
+ * Obtener datos del pedido desde el commerceOrder
+ * Por ahora simularemos los datos, pero en el futuro esto debería
+ * conectarse a una base de datos o sistema de almacenamiento
+ * @param {string} commerceOrder - ID de la orden de comercio
+ * @returns {Object|null} - Datos del pedido
+ */
+async function getOrderDataFromCommerce(commerceOrder) {
+  try {
+    // Por ahora retornamos datos simulados
+    // En el futuro, esto debería consultar una base de datos
+    // donde se almacenen los pedidos por commerceOrder
+    
+    console.log('🔍 Buscando datos del pedido para:', commerceOrder);
+    
+    // Simular datos del pedido
+    // TODO: Implementar búsqueda real en base de datos
+    const mockOrderData = {
+      commerceOrder: commerceOrder,
+      customerEmail: 'javohv@gmail.com', // Este debería venir de la BD
+      total: 12990,
+      subtotal: 7990,
+      shipping: 5000,
+      items: [
+        {
+          product: {
+            name: 'Tarjeta Explosiva Simple',
+            description: 'Tarjeta explosiva con 1 cubo de 4 espacios para fotos y mensajes',
+            id: 'ex01-simple'
+          },
+          price: 7990,
+          quantity: 1,
+          photos: [
+            // Aquí deberían estar las fotos reales subidas por el cliente
+            { name: 'Foto_1.jpg' },
+            { name: 'Foto_2.jpg' },
+            { name: 'Foto_3.jpg' },
+            { name: 'Foto_4.jpg' }
+          ],
+          messages: [
+            // Aquí deberían estar los mensajes personalizados
+            { text: 'Mensaje personalizado del cliente' }
+          ]
+        }
+      ]
+    };
+    
+    console.log('📦 Datos del pedido encontrados:', {
+      commerceOrder: mockOrderData.commerceOrder,
+      customerEmail: mockOrderData.customerEmail,
+      total: mockOrderData.total,
+      itemsCount: mockOrderData.items.length
+    });
+    
+    return mockOrderData;
+    
+  } catch (error) {
+    console.error('❌ Error obteniendo datos del pedido:', error);
+    return null;
+  }
+}
