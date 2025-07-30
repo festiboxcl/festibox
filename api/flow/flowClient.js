@@ -19,26 +19,33 @@ class FlowClient {
 
   /**
    * Crear firma HMAC-SHA256 según documentación oficial de Flow
+   * Basado en la implementación PHP oficial de Flow
    * @param {Object} params - Parámetros a firmar (sin el parámetro 's')
    * @returns {string} - Firma hexadecimal
    */
   createSignature(params) {
-    // Ordenar parámetros alfabéticamente por nombre
+    // Ordenar parámetros alfabéticamente por nombre (igual que ksort en PHP)
     const sortedKeys = Object.keys(params).sort();
     
-    // Concatenar como: nombre_parametrovalorparam1valorparam2...
-    // Ejemplo: "amount5000apiKeyXXXXcurrencyCLP"
+    // Concatenar como: parametro1valor1parametro2valor2...
+    // IMPORTANTE: Sin separadores entre parámetro y valor
     let stringToSign = '';
     for (const key of sortedKeys) {
-      stringToSign += key + params[key];
+      // Convertir todo a string y concatenar directamente
+      stringToSign += key + String(params[key]);
     }
 
-    // Firmar con HMAC-SHA256 y secretKey
+    console.log('Flow Debug - String to sign:', stringToSign);
+    console.log('Flow Debug - String length:', stringToSign.length);
+    console.log('Flow Debug - Secret key length:', this.secretKey.length);
+    
+    // Firmar con HMAC-SHA256 usando el secretKey como buffer de bytes
     const signature = crypto
       .createHmac('sha256', this.secretKey)
-      .update(stringToSign)
+      .update(stringToSign, 'utf8')
       .digest('hex');
       
+    console.log('Flow Debug - Generated signature:', signature);
     return signature;
   }
 
