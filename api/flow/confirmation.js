@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import flowConfig from './flowConfig.js';
+import { sendAdminNotification, sendCustomerConfirmation } from '../services/resendEmailService.js';
 
 /**
  * Crear firma HMAC-SHA256 para verificar notificaciones de Flow
@@ -108,20 +109,9 @@ export default async function handler(req, res) {
           const orderData = await getOrderDataFromCommerce(paymentStatus.commerceOrder);
           
           if (orderData) {
-            // Enviar notificación simple (siempre funciona)
-            try {
-              const { sendSimpleNotification } = await import('../services/simpleEmailService.js');
-              await sendSimpleNotification(orderData, paymentStatus);
-              console.log('✅ Notificación simple enviada');
-            } catch (notificationError) {
-              console.error('❌ Error enviando notificación simple:', notificationError);
-            }
-            
-            // Intentar enviar emails con Resend (prioritario)
+            // Enviar emails con Resend
             if (process.env.RESEND_API_KEY) {
               try {
-                const { sendAdminNotification, sendCustomerConfirmation } = await import('../services/resendEmailService.js');
-                
                 // Email al administrador
                 await sendAdminNotification(orderData, paymentStatus);
                 console.log('✅ Email enviado al administrador (Resend)');
@@ -132,22 +122,9 @@ export default async function handler(req, res) {
                 
               } catch (resendError) {
                 console.error('❌ Error enviando emails con Resend:', resendError);
-                
-                // Fallback a nodemailer si Resend falla
-                try {
-                  const { sendOrderNotificationToAdmin, sendConfirmationToCustomer } = await import('../services/emailService.js');
-                  
-                  if (process.env.EMAIL_PASSWORD || process.env.SENDGRID_API_KEY) {
-                    await sendOrderNotificationToAdmin(orderData, paymentStatus);
-                    await sendConfirmationToCustomer(orderData, paymentStatus);
-                    console.log('✅ Emails enviados con fallback');
-                  }
-                } catch (fallbackError) {
-                  console.error('❌ Error en fallback de emails:', fallbackError);
-                }
               }
             } else {
-              console.log('⚠️ RESEND_API_KEY no configurada - solo notificación simple enviada');
+              console.log('⚠️ RESEND_API_KEY no configurada');
             }
           }
         } catch (orderError) {
