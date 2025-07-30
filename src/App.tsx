@@ -159,10 +159,10 @@ const getProductContent = (product: any) => {
 
 function App() {
   const [selectedBaseProduct, setSelectedBaseProduct] = useState<any>(null); // Empezar sin producto seleccionado
-  const [images, setImages] = useState<UploadedImage[]>([]);
+  const [, setImages] = useState<UploadedImage[]>([]); // Underscore para indicar que no se usa
   const [isAddedToCart, setIsAddedToCart] = useState(false);
   const [currentStep, setCurrentStep] = useState<'product' | 'card-options' | 'customize'>('product');
-  const [productConfiguration, setProductConfiguration] = useState<ProductConfiguration | null>(null);
+  const [, setProductConfiguration] = useState<ProductConfiguration | null>(null); // Underscore para indicar que no se usa
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [pendingProduct, setPendingProduct] = useState<any>(null);
   

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Play, Pause, Volume2, VolumeX, ExternalLink } from 'lucide-react';
+import { Play, Volume2, VolumeX, ExternalLink } from 'lucide-react';
 
 interface DemoVideo {
   id: string;

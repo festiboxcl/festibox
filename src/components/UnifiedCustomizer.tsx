@@ -351,7 +351,7 @@ export function UnifiedCustomizer({ product, onComplete, onBack }: UnifiedCustom
 
   // Calcular espacios por cubo (4 espacios por cubo)
   const spacesPerCube = 4;
-  const totalCubes = Math.ceil(product.imageCount / spacesPerCube);
+  // const totalCubes = Math.ceil(product.imageCount / spacesPerCube); // No usado actualmente
   const currentCubeSpaces = cubeSpaces.slice(
     currentCubeIndex * spacesPerCube, 
     (currentCubeIndex + 1) * spacesPerCube
@@ -359,7 +359,7 @@ export function UnifiedCustomizer({ product, onComplete, onBack }: UnifiedCustom
 
   // Calcular progreso del cubo actual
   const currentCubeCompleted = currentCubeSpaces.filter(space => space.content).length;
-  const currentCubeTotal = currentCubeSpaces.length;
+  // const currentCubeTotal = currentCubeSpaces.length; // No usado actualmente
 
   // Debug: Log modal state
   console.log('showSelectionModal:', showSelectionModal);
@@ -769,7 +769,6 @@ export function UnifiedCustomizer({ product, onComplete, onBack }: UnifiedCustom
             activeSpace={activeSpace}
             showTooltip={showTooltip}
             tooltipFaceIndex={tooltipFaceIndex}
-            spacesPerCube={spacesPerCube}
             allCubeSpaces={cubeSpaces}
             playTap={playTap}
             playClick={playClick}
@@ -876,7 +875,7 @@ function Cube3DPreview({
   activeSpace,
   showTooltip,
   tooltipFaceIndex,
-  spacesPerCube,
+  // spacesPerCube, // No usado en este componente
   allCubeSpaces,
   playTap,
   playClick
@@ -890,7 +889,7 @@ function Cube3DPreview({
   activeSpace: string | null,
   showTooltip: boolean,
   tooltipFaceIndex: number | null,
-  spacesPerCube: number,
+  // spacesPerCube: number, // No usado en este componente
   allCubeSpaces: CubeSpace[],
   playTap: () => void,
   playClick: () => void
