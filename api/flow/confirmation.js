@@ -117,26 +117,37 @@ export default async function handler(req, res) {
               console.error('❌ Error enviando notificación simple:', notificationError);
             }
             
-            // Intentar enviar emails si está configurado
-            try {
-              const { sendOrderNotificationToAdmin, sendConfirmationToCustomer } = await import('../services/emailService.js');
-              
-              // Email al administrador
-              if (process.env.EMAIL_PASSWORD || process.env.RESEND_API_KEY || process.env.SENDGRID_API_KEY) {
-                await sendOrderNotificationToAdmin(orderData, paymentStatus);
-                console.log('✅ Email enviado al administrador');
-              } else {
-                console.log('⚠️ Email no configurado - solo notificación simple enviada');
+            // Intentar enviar emails con Resend (prioritario)
+            if (process.env.RESEND_API_KEY) {
+              try {
+                const { sendAdminNotification, sendCustomerConfirmation } = await import('../services/resendEmailService.js');
+                
+                // Email al administrador
+                await sendAdminNotification(orderData, paymentStatus);
+                console.log('✅ Email enviado al administrador (Resend)');
+                
+                // Email al cliente
+                await sendCustomerConfirmation(orderData, paymentStatus);
+                console.log('✅ Email de confirmación enviado al cliente (Resend)');
+                
+              } catch (resendError) {
+                console.error('❌ Error enviando emails con Resend:', resendError);
+                
+                // Fallback a nodemailer si Resend falla
+                try {
+                  const { sendOrderNotificationToAdmin, sendConfirmationToCustomer } = await import('../services/emailService.js');
+                  
+                  if (process.env.EMAIL_PASSWORD || process.env.SENDGRID_API_KEY) {
+                    await sendOrderNotificationToAdmin(orderData, paymentStatus);
+                    await sendConfirmationToCustomer(orderData, paymentStatus);
+                    console.log('✅ Emails enviados con fallback');
+                  }
+                } catch (fallbackError) {
+                  console.error('❌ Error en fallback de emails:', fallbackError);
+                }
               }
-              
-              // Email al cliente
-              if (process.env.EMAIL_PASSWORD || process.env.RESEND_API_KEY || process.env.SENDGRID_API_KEY) {
-                await sendConfirmationToCustomer(orderData, paymentStatus);
-                console.log('✅ Email de confirmación enviado al cliente');
-              }
-              
-            } catch (emailError) {
-              console.error('❌ Error enviando emails (usando fallback):', emailError);
+            } else {
+              console.log('⚠️ RESEND_API_KEY no configurada - solo notificación simple enviada');
             }
           }
         } catch (orderError) {
