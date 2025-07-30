@@ -69,9 +69,9 @@ export default async function handler(req, res) {
     // Crear orden única con timestamp más preciso
     const commerceOrder = `FESTIBOX-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
-    // Usar dominio fijo para producción (compatible con custom domain)
+    // Usar el dominio actual (festibox.cl en producción)
     const baseUrlSite = process.env.VERCEL_ENV === 'production' 
-      ? 'https://festibox.vercel.app'
+      ? 'https://festibox.cl'
       : `https://${req.headers.host}`;
 
     console.log('🌐 Configuración de URLs:', {
