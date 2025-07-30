@@ -1,21 +1,37 @@
 import crypto from 'crypto';
 import flowConfig from './flowConfig.js';
 
-// Crear firma HMAC-SHA256 para verificar confirmación de Flow
+/**
+ * Crear firma HMAC-SHA256 para verificar notificaciones de Flow
+ * Según documentación oficial: concatenar nombre_parametro + valor
+ * @param {Object} params - Parámetros a firmar
+ * @param {string} secretKey - Secret Key de Flow
+ * @returns {string} - Firma hexadecimal
+ */
 function createSignature(params, secretKey) {
-  const sortedParams = Object.keys(params)
-    .sort()
-    .map(key => `${key}=${params[key]}`)
-    .join('&');
+  // Ordenar parámetros alfabéticamente
+  const sortedKeys = Object.keys(params).sort();
+  
+  // Concatenar como: nombre_parametrovalor (sin separadores)
+  let stringToSign = '';
+  for (const key of sortedKeys) {
+    stringToSign += key + params[key];
+  }
+  
+  console.log('Verificando firma - String:', stringToSign);
 
   return crypto
     .createHmac('sha256', secretKey)
-    .update(sortedParams)
+    .update(stringToSign)
     .digest('hex');
 }
 
 export default async function handler(req, res) {
-  // Flow envía POST para confirmaciones
+  console.log('🔔 Confirmación Flow - Método:', req.method);
+  console.log('🔔 Headers:', req.headers);
+  console.log('🔔 Body:', req.body);
+
+  // Flow envía confirmaciones via POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método no permitido' });
   }
@@ -24,55 +40,70 @@ export default async function handler(req, res) {
     const secretKey = flowConfig.secretKey;
     
     if (!secretKey) {
-      console.error('Secret Key de Flow no configurada');
+      console.error('❌ Secret Key de Flow no configurada');
       return res.status(500).json({ error: 'Configuración del servidor incompleta' });
     }
 
-    // Flow envía los datos en el body
-    const { token, signature: receivedSignature } = req.body;
+    // Flow puede enviar el token en el body o como form-data
+    const token = req.body.token || req.body.get?.('token');
 
-    if (!token || !receivedSignature) {
-      console.error('Datos de confirmación incompletos:', req.body);
-      return res.status(400).json({ error: 'Datos de confirmación incompletos' });
+    if (!token) {
+      console.error('❌ Token faltante en confirmación:', req.body);
+      return res.status(400).json({ error: 'Token requerido' });
     }
 
-    // Verificar la firma enviada por Flow
-    const expectedSignature = createSignature({ token }, secretKey);
-    
-    if (expectedSignature !== receivedSignature) {
-      console.error('Firma inválida:', {
-        expected: expectedSignature,
-        received: receivedSignature
+    console.log('✅ Confirmación recibida para token:', token);
+
+    // Verificar el pago directamente con Flow usando nuestro cliente
+    try {
+      const { createFlowClient } = await import('./flowClient.js');
+      const flowClient = createFlowClient();
+      
+      const paymentStatus = await flowClient.getPaymentStatus(token);
+      console.log('📊 Estado del pago verificado:', paymentStatus);
+
+      // Aquí puedes agregar lógica específica según el estado:
+      // - Actualizar base de datos
+      // - Enviar emails de confirmación  
+      // - Procesar el pedido
+      // - etc.
+
+      if (paymentStatus.status === 2) { // 2 = PAID en Flow
+        console.log('💰 Pago confirmado exitosamente:', {
+          token,
+          flowOrder: paymentStatus.flowOrder,
+          amount: paymentStatus.amount
+        });
+      }
+
+      // Flow espera respuesta HTTP 200 para confirmar recepción
+      res.status(200).json({ 
+        success: true,
+        message: 'Confirmación procesada correctamente',
+        token,
+        paymentStatus: paymentStatus.status
       });
-      return res.status(400).json({ error: 'Firma de confirmación inválida' });
+
+    } catch (flowError) {
+      console.error('❌ Error verificando pago con Flow:', flowError);
+      // Aún así responder 200 para que Flow no reintente
+      res.status(200).json({ 
+        success: false,
+        message: 'Error verificando pago pero confirmación recibida',
+        token,
+        error: flowError.message
+      });
     }
-
-    console.log('Confirmación de pago recibida:', {
-      token,
-      timestamp: new Date().toISOString()
-    });
-
-    // Aquí podrías:
-    // 1. Verificar el estado del pago con Flow
-    // 2. Actualizar la base de datos
-    // 3. Enviar emails de confirmación
-    // 4. Procesar el pedido
-
-    // Por ahora solo logueamos y confirmamos
-    console.log('Pago confirmado exitosamente para token:', token);
-
-    // Flow espera una respuesta HTTP 200 para confirmar que recibimos la notificación
-    res.status(200).json({ 
-      success: true,
-      message: 'Confirmación procesada correctamente',
-      token 
-    });
 
   } catch (error) {
-    console.error('Error procesando confirmación de Flow:', error);
-    res.status(500).json({ 
-      error: 'Error interno del servidor',
-      details: error instanceof Error ? error.message : 'Error desconocido'
+    console.error('❌ Error procesando confirmación:', error);
+    
+    // Importante: siempre responder 200 a Flow para evitar reintentos
+    res.status(200).json({ 
+      success: false,
+      message: 'Error procesando confirmación',
+      error: error.message,
+      timestamp: new Date().toISOString()
     });
   }
 };

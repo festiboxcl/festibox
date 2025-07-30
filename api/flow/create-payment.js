@@ -1,6 +1,10 @@
 import { createFlowClient } from './flowClient.js';
 
-// Generar subject del pago
+/**
+ * Generar subject del pago según el tipo de productos
+ * @param {Array} items - Items del carrito
+ * @returns {string} - Subject del pago
+ */
 function generateSubject(items) {
   if (items.length === 1) {
     return `FestiBox - ${items[0].product.name} (${items[0].quantity}x)`;
@@ -16,13 +20,13 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('🔍 Inicio de create-payment');
+    console.log('� Iniciando creación de pago Flow');
     
     // Crear cliente de Flow
     let flowClient;
     try {
       flowClient = createFlowClient();
-      console.log('🔍 Flow client creado exitosamente');
+      console.log('✅ Flow client creado exitosamente');
     } catch (error) {
       console.error('❌ Error creando Flow client:', error.message);
       return res.status(500).json({ 
@@ -32,73 +36,103 @@ export default async function handler(req, res) {
     }
 
     const { orderDetails } = req.body;
-    console.log('🔍 OrderDetails recibidos:', JSON.stringify(orderDetails, null, 2));
+    console.log('� Detalles del pedido:', JSON.stringify(orderDetails, null, 2));
 
-    if (!orderDetails || !orderDetails.customerEmail || !orderDetails.items?.length) {
+    // Validar datos del pedido
+    if (!orderDetails || !orderDetails.customerEmail || !orderDetails.items?.length || !orderDetails.total) {
       console.error('❌ Datos de pedido incompletos:', {
         hasOrderDetails: !!orderDetails,
         hasEmail: !!orderDetails?.customerEmail,
-        hasItems: !!orderDetails?.items?.length
+        hasItems: !!orderDetails?.items?.length,
+        hasTotal: !!orderDetails?.total
       });
       return res.status(400).json({ 
-        error: 'Datos de pedido incompletos' 
+        error: 'Datos de pedido incompletos. Se requiere: customerEmail, items y total' 
       });
     }
 
-    // Crear orden única
+    // Validar email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(orderDetails.customerEmail)) {
+      return res.status(400).json({ 
+        error: 'Email del cliente no es válido' 
+      });
+    }
+
+    // Validar monto mínimo
+    if (orderDetails.total < 100) {
+      return res.status(400).json({ 
+        error: 'El monto mínimo para un pago es $100 CLP' 
+      });
+    }
+
+    // Crear orden única con timestamp más preciso
     const commerceOrder = `FESTIBOX-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
-    // Obtener el dominio base de la request
+    // Obtener dominio desde headers (compatible con Vercel)
     const host = req.headers.host;
     const protocol = req.headers['x-forwarded-proto'] || 'https';
     const baseUrlSite = `${protocol}://${host}`;
 
+    // Preparar datos para Flow
     const paymentData = {
       commerceOrder,
       subject: generateSubject(orderDetails.items),
       currency: 'CLP',
-      amount: orderDetails.total,
-      email: orderDetails.customerEmail,
+      amount: Math.round(orderDetails.total), // Asegurar que sea entero
+      email: orderDetails.customerEmail.trim().toLowerCase(),
       urlConfirmation: `${baseUrlSite}/api/flow/confirmation`,
       urlReturn: `${baseUrlSite}/pedido-confirmado?order=${commerceOrder}`,
       optional: {
+        customer: {
+          email: orderDetails.customerEmail
+        },
         items: orderDetails.items.map(item => ({
           productName: item.product.name,
           quantity: item.quantity,
           price: item.price,
           photos: item.photos?.length || 0,
           messages: item.messages?.filter(m => m?.trim()).length || 0
-        }))
+        })),
+        totals: {
+          subtotal: orderDetails.subtotal,
+          shipping: orderDetails.shipping,
+          total: orderDetails.total
+        }
       }
     };
 
-    console.log('Enviando pago a Flow con el cliente:', {
+    console.log('🚀 Enviando pago a Flow:', {
       commerceOrder,
       amount: paymentData.amount,
-      email: paymentData.email
+      email: paymentData.email,
+      urlConfirmation: paymentData.urlConfirmation,
+      urlReturn: paymentData.urlReturn
     });
     
     try {
-      // Usar el cliente para crear el pago
+      // Crear el pago en Flow
       const result = await flowClient.createPayment(paymentData);
-      console.log('Respuesta de Flow procesada:', result);
+      console.log('✅ Respuesta exitosa de Flow:', result);
       
-      if (result.status !== 'ok') {
-        console.error('Flow respondió con error:', result);
-        return res.status(400).json({ 
-          error: `Error de Flow: ${result.message || 'Error desconocido'}`,
+      // Validar respuesta de Flow
+      if (!result.url || !result.token) {
+        console.error('❌ Respuesta incompleta de Flow:', result);
+        return res.status(500).json({ 
+          error: 'Respuesta incompleta de Flow',
           details: result
         });
       }
 
-      // Guardar información del pedido (opcional - podrías usar una base de datos)
-      console.log('Pago creado exitosamente:', {
+      // Log del pago creado
+      console.log('💰 Pago creado exitosamente:', {
         commerceOrder,
         flowOrder: result.flowOrder,
-        token: result.token
+        token: result.token,
+        url: result.url
       });
 
-      // Responder con los datos del pago
+      // Responder con datos del pago
       res.status(200).json({
         success: true,
         flowOrder: result.flowOrder,
@@ -108,19 +142,34 @@ export default async function handler(req, res) {
       });
       
     } catch (flowError) {
-      console.error('Error en la comunicación con Flow:', flowError);
-      return res.status(500).json({ 
-        error: 'Error comunicándose con Flow', 
-        details: flowError instanceof Error ? flowError.message : String(flowError)
-      });
+      console.error('❌ Error comunicándose con Flow:', flowError);
+      
+      // Determinar tipo de error
+      if (flowError.message.includes('Error HTTP 400')) {
+        return res.status(400).json({ 
+          error: 'Datos inválidos para Flow', 
+          details: flowError.message
+        });
+      } else if (flowError.message.includes('Error Flow')) {
+        return res.status(400).json({ 
+          error: 'Error reportado por Flow', 
+          details: flowError.message
+        });
+      } else {
+        return res.status(500).json({ 
+          error: 'Error de comunicación con Flow', 
+          details: flowError.message
+        });
+      }
     }
 
   } catch (error) {
-    console.error('❌ Error en create-payment:', error);
-    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack available');
+    console.error('❌ Error crítico en create-payment:', error);
+    console.error('❌ Stack trace:', error.stack);
+    
     res.status(500).json({ 
       error: 'Error interno del servidor',
-      details: error instanceof Error ? error.message : 'Error desconocido',
+      details: error.message,
       timestamp: new Date().toISOString()
     });
   }
