@@ -30,8 +30,19 @@ export default async function handler(req, res) {
   console.log('🔔 Confirmación Flow - Método:', req.method);
   console.log('🔔 Headers:', req.headers);
   console.log('🔔 Body:', req.body);
+  console.log('🔔 Query:', req.query);
 
-  // Flow envía confirmaciones via POST
+  // Flow puede usar GET para verificación de conectividad y POST para confirmaciones reales
+  if (req.method === 'GET') {
+    // Respuesta para verificación de conectividad
+    console.log('✅ Verificación de conectividad Flow - Respondiendo OK');
+    return res.status(200).json({ 
+      success: true,
+      message: 'Endpoint de confirmación Flow activo',
+      timestamp: new Date().toISOString()
+    });
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método no permitido' });
   }
@@ -44,11 +55,28 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Configuración del servidor incompleta' });
     }
 
-    // Flow puede enviar el token en el body o como form-data
-    const token = req.body.token || req.body.get?.('token');
+    // Flow puede enviar el token de diferentes formas
+    let token = null;
+    
+    // Buscar token en diferentes lugares
+    if (req.body && typeof req.body === 'object') {
+      token = req.body.token;
+    } else if (req.query && req.query.token) {
+      token = req.query.token;
+    }
+    
+    // Si el body es form-data, intentar parsearlo
+    if (!token && req.body && typeof req.body === 'string') {
+      try {
+        const parsed = new URLSearchParams(req.body);
+        token = parsed.get('token');
+      } catch (e) {
+        console.log('No se pudo parsear body como form-data');
+      }
+    }
 
     if (!token) {
-      console.error('❌ Token faltante en confirmación:', req.body);
+      console.error('❌ Token faltante en confirmación. Body:', req.body, 'Query:', req.query);
       return res.status(400).json({ error: 'Token requerido' });
     }
 
