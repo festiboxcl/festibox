@@ -32,8 +32,6 @@ class FlowClient {
     for (const key of sortedKeys) {
       stringToSign += key + params[key];
     }
-    
-    console.log('String para firmar:', stringToSign);
 
     // Firmar con HMAC-SHA256 y secretKey
     const signature = crypto
@@ -41,7 +39,6 @@ class FlowClient {
       .update(stringToSign)
       .digest('hex');
       
-    console.log('Firma generada:', signature);
     return signature;
   }
 
@@ -92,8 +89,6 @@ class FlowClient {
       amount: params.amount,
       email: params.email
     });
-
-    console.log('Flow Client - FormData a enviar:', formData.toString());
 
     // Enviar request a Flow API
     const response = await fetch(`${this.baseUrl}/payment/create`, {
