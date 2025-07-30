@@ -93,11 +93,15 @@ class FlowClient {
       email: params.email
     });
 
+    console.log('Flow Client - FormData a enviar:', formData.toString());
+
     // Enviar request a Flow API
     const response = await fetch(`${this.baseUrl}/payment/create`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json',
+        'User-Agent': 'FestiBox/1.0'
       },
       body: formData
     });
