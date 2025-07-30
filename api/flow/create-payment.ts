@@ -1,5 +1,5 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
-import crypto from 'crypto';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import * as crypto from 'crypto';
 
 interface FlowPaymentRequest {
   orderDetails: {
@@ -50,7 +50,7 @@ function generateSubject(items: any[]): string {
   }
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+async function handler(req: VercelRequest, res: VercelResponse) {
   // Solo permitir POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método no permitido' });
@@ -217,3 +217,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 }
+
+// Asegurar compatibilidad ES module
+export { handler as default };

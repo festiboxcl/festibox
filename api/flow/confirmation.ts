@@ -1,5 +1,5 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
-import crypto from 'crypto';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import * as crypto from 'crypto';
 
 // Crear firma HMAC-SHA256 para verificar confirmación de Flow
 function createSignature(params: Record<string, any>, secretKey: string): string {
