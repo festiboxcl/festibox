@@ -6,7 +6,7 @@ export default async function handler(req, res) {
     
     // 1. Credenciales exactas de Flow (hardcoded)
     const apiKey = '1F35DEE4-1B10-49E6-A226-55845L8E1A12';
-    const secretKey = 'f6944874c7b8a70c8da78c14f03f853b50019c31';
+    const secretKey = '1f47dd2ce362449c28a2c6805f8495b74cd684a1'; // Nueva Secret Key
     const baseUrl = 'https://sandbox.flow.cl/api';
     
     // 2. Datos básicos de prueba
