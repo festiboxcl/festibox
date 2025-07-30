@@ -3,15 +3,54 @@ import nodemailer from 'nodemailer';
 
 /**
  * Configuración del transportador de email
+ * Soporta múltiples métodos: Gmail App Password, Gmail OAuth2, o SendGrid
  */
 function createEmailTransporter() {
-  // Usar un servicio como Gmail, SendGrid, o similar
-  // Para producción, usar variables de entorno
+  // Opción 1: Si tienes SendGrid configurado (recomendado para producción)
+  if (process.env.SENDGRID_API_KEY) {
+    return nodemailer.createTransporter({
+      service: 'SendGrid',
+      auth: {
+        user: 'apikey',
+        pass: process.env.SENDGRID_API_KEY
+      }
+    });
+  }
+  
+  // Opción 2: Gmail con OAuth2 (si está configurado)
+  if (process.env.GMAIL_OAUTH_CLIENT_ID) {
+    return nodemailer.createTransporter({
+      service: 'gmail',
+      auth: {
+        type: 'OAuth2',
+        user: process.env.EMAIL_USER || 'clfestibox@gmail.com',
+        clientId: process.env.GMAIL_OAUTH_CLIENT_ID,
+        clientSecret: process.env.GMAIL_OAUTH_CLIENT_SECRET,
+        refreshToken: process.env.GMAIL_OAUTH_REFRESH_TOKEN,
+        accessToken: process.env.GMAIL_OAUTH_ACCESS_TOKEN
+      }
+    });
+  }
+  
+  // Opción 3: Gmail con App Password (método tradicional)
+  if (process.env.EMAIL_PASSWORD) {
+    return nodemailer.createTransporter({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER || 'clfestibox@gmail.com',
+        pass: process.env.EMAIL_PASSWORD
+      }
+    });
+  }
+  
+  // Opción 4: SMTP genérico como fallback
   return nodemailer.createTransporter({
-    service: 'gmail',
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: process.env.SMTP_PORT || 587,
+    secure: false,
     auth: {
       user: process.env.EMAIL_USER || 'clfestibox@gmail.com',
-      pass: process.env.EMAIL_PASSWORD // App password de Gmail
+      pass: process.env.EMAIL_PASSWORD || 'fallback'
     }
   });
 }

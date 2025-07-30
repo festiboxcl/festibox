@@ -108,23 +108,35 @@ export default async function handler(req, res) {
           const orderData = await getOrderDataFromCommerce(paymentStatus.commerceOrder);
           
           if (orderData) {
-            // Enviar notificaciones por email
-            const { sendOrderNotificationToAdmin, sendConfirmationToCustomer } = await import('../services/emailService.js');
-            
-            // Email al administrador con detalles del pedido
+            // Enviar notificación simple (siempre funciona)
             try {
-              await sendOrderNotificationToAdmin(orderData, paymentStatus);
-              console.log('✅ Email enviado al administrador');
-            } catch (emailError) {
-              console.error('❌ Error enviando email al administrador:', emailError);
+              const { sendSimpleNotification } = await import('../services/simpleEmailService.js');
+              await sendSimpleNotification(orderData, paymentStatus);
+              console.log('✅ Notificación simple enviada');
+            } catch (notificationError) {
+              console.error('❌ Error enviando notificación simple:', notificationError);
             }
             
-            // Email de confirmación al cliente
+            // Intentar enviar emails si está configurado
             try {
-              await sendConfirmationToCustomer(orderData, paymentStatus);
-              console.log('✅ Email de confirmación enviado al cliente');
+              const { sendOrderNotificationToAdmin, sendConfirmationToCustomer } = await import('../services/emailService.js');
+              
+              // Email al administrador
+              if (process.env.EMAIL_PASSWORD || process.env.RESEND_API_KEY || process.env.SENDGRID_API_KEY) {
+                await sendOrderNotificationToAdmin(orderData, paymentStatus);
+                console.log('✅ Email enviado al administrador');
+              } else {
+                console.log('⚠️ Email no configurado - solo notificación simple enviada');
+              }
+              
+              // Email al cliente
+              if (process.env.EMAIL_PASSWORD || process.env.RESEND_API_KEY || process.env.SENDGRID_API_KEY) {
+                await sendConfirmationToCustomer(orderData, paymentStatus);
+                console.log('✅ Email de confirmación enviado al cliente');
+              }
+              
             } catch (emailError) {
-              console.error('❌ Error enviando email al cliente:', emailError);
+              console.error('❌ Error enviando emails (usando fallback):', emailError);
             }
           }
         } catch (orderError) {
