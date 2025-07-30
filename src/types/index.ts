@@ -80,3 +80,60 @@ export interface CustomerInfo {
   city: string;
   region: string;
 }
+
+// Tipos para el sistema de carrito y pagos con Flow
+export interface FlowConfig {
+  apiKey: string;
+  secretKey: string;
+  baseUrl: string;
+}
+
+export interface FlowPayment {
+  commerceOrder: string;
+  subject: string;
+  currency: string;
+  amount: number;
+  email: string;
+  paymentMethod?: number;
+  urlConfirmation: string;
+  urlReturn: string;
+  optional?: Record<string, any>;
+}
+
+export interface FlowPaymentResponse {
+  flowOrder: number;
+  url: string;
+  token: string;
+}
+
+export interface ShoppingCartItem {
+  id: string;
+  product: Product;
+  configuration: ProductConfiguration;
+  photos: File[];
+  messages: string[];
+  quantity: number;
+  price: number;
+}
+
+export interface OrderDetails {
+  items: ShoppingCartItem[];
+  subtotal: number;
+  shipping: number;
+  total: number;
+  customerEmail: string;
+}
+
+export interface OrderInfo {
+  commerceOrder: string;
+  items: ShoppingCartItem[];
+  totals: {
+    subtotal: number;
+    shipping: number;
+    total: number;
+  };
+  customerEmail: string;
+  flowOrder: number;
+  token: string;
+  createdAt: string;
+}

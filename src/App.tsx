@@ -6,9 +6,12 @@ import { ProductSelector } from './components/ProductSelector';
 import { UnifiedCustomizer } from './components/UnifiedCustomizer';
 import { CardOptionSelector } from './components/CardOptionSelector';
 import { ProductConfirmationModal } from './components/ProductConfirmationModal';
+import { ShoppingCartComponent } from './components/ShoppingCart';
+import { CheckoutModal } from './components/CheckoutModal';
 import { ShoppingCart, Heart, Camera, Palette, Gift, Instagram, MessageCircle, Mail } from 'lucide-react';
 // import { assets } from './assets';
 import { useProductWithOptions } from './hooks/useProductWithOptions';
+import { useShoppingCart } from './hooks/useShoppingCart';
 import { useSound } from './hooks/useSound';
 import { animations } from './utils/animations';
 import type { UploadedImage, ProductConfiguration } from './types';
@@ -165,9 +168,23 @@ function App() {
   const [, setProductConfiguration] = useState<ProductConfiguration | null>(null); // Underscore para indicar que no se usa
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [pendingProduct, setPendingProduct] = useState<any>(null);
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   
   // Hook de sonidos
   const { playClick, playSuccess, playSelect, playHover } = useSound();
+  
+  // Hook del carrito de compras (ya no necesita configuración)
+  const {
+    cartItems,
+    isCartOpen,
+    isProcessingPayment,
+    cartTotals,
+    addToCart,
+    updateQuantity,
+    removeFromCart,
+    setIsCartOpen,
+    processCheckout
+  } = useShoppingCart();
   
   // Usar el hook para manejar las opciones de tarjeta
   const { 
@@ -180,6 +197,7 @@ function App() {
   const handleAddToCart = () => {
     playSuccess(); // Sonido de éxito
     setIsAddedToCart(true);
+    setIsCartOpen(true); // Abrir carrito automáticamente
     setTimeout(() => setIsAddedToCart(false), 2000);
   };
 
@@ -214,8 +232,9 @@ function App() {
     setPendingProduct(null);
   };
 
-  const handleCustomizationComplete = (config: ProductConfiguration, photos: File[], _messages: string[]) => {
+  const handleCustomizationComplete = (config: ProductConfiguration, photos: File[], messages: string[]) => {
     setProductConfiguration(config);
+    
     // Convertir Files a UploadedImages para compatibilidad
     const uploadedImages: UploadedImage[] = photos.map((file, index) => ({
       id: `photo-${index}`,
@@ -224,8 +243,44 @@ function App() {
       position: index + 1
     }));
     setImages(uploadedImages);
-    // Agregar directamente al carrito sin paso de resumen
+    
+    // Verificar que tenemos un producto seleccionado
+    if (!selectedProduct) {
+      console.error('No hay producto seleccionado para agregar al carrito');
+      return;
+    }
+    
+    // Calcular precio base del producto
+    const basePrice = selectedProduct.price || 15000; // Precio por defecto
+    
+    // Agregar al carrito
+    addToCart({
+      product: selectedProduct,
+      configuration: config,
+      photos,
+      messages: messages.filter(m => m.trim()), // Solo mensajes no vacíos
+      price: basePrice
+    });
+    
+    // Mostrar carrito
     handleAddToCart();
+  };
+
+  // Manejar checkout desde el carrito
+  const handleCartCheckout = async (_items: any[]) => {
+    setShowCheckoutModal(true);
+  };
+
+  // Procesar checkout con email
+  const handleCheckoutWithEmail = async (email: string) => {
+    try {
+      await processCheckout(email);
+      setShowCheckoutModal(false);
+      // El usuario será redirigido a Flow automáticamente
+    } catch (error) {
+      console.error('Error en checkout:', error);
+      throw error;
+    }
   };
 
   return (
@@ -264,12 +319,15 @@ function App() {
                 className="p-2 text-gray-600 hover:text-primary-600 relative transition-colors"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => playClick()}
+                onClick={() => {
+                  playClick();
+                  setIsCartOpen(true);
+                }}
                 onHoverStart={() => playHover()}
               >
                 <ShoppingCart className="h-4 w-4" />
                 <AnimatePresence>
-                  {isAddedToCart && (
+                  {(cartItems.length > 0 || isAddedToCart) && (
                     <motion.span 
                       className="absolute -top-1 -right-1 bg-primary-600 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center"
                       initial={{ scale: 0, opacity: 0 }}
@@ -277,7 +335,7 @@ function App() {
                       exit={{ scale: 0, opacity: 0 }}
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
                     >
-                      1
+                      {cartItems.length || 1}
                     </motion.span>
                   )}
                 </AnimatePresence>
@@ -421,6 +479,25 @@ function App() {
           </div>
         </div>
       </footer>
+
+      {/* Carrito de compras */}
+      <ShoppingCartComponent
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        cartItems={cartItems}
+        onUpdateQuantity={updateQuantity}
+        onRemoveItem={removeFromCart}
+        onCheckout={handleCartCheckout}
+      />
+
+      {/* Modal de checkout */}
+      <CheckoutModal
+        isOpen={showCheckoutModal}
+        onClose={() => setShowCheckoutModal(false)}
+        onConfirm={handleCheckoutWithEmail}
+        cartTotal={cartTotals.total}
+        isProcessing={isProcessingPayment}
+      />
 
       {/* Modal de confirmación de producto */}
       <AnimatePresence>
