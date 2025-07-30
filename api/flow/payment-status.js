@@ -1,4 +1,4 @@
-const crypto = require('crypto');
+import crypto from 'crypto';
 
 // Crear firma HMAC-SHA256 para Flow
 function createSignature(params, secretKey) {
@@ -13,7 +13,7 @@ function createSignature(params, secretKey) {
     .digest('hex');
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   // Solo permitir GET para verificar estado
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Método no permitido' });
