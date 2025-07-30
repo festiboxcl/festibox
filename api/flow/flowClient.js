@@ -183,7 +183,7 @@ export function createFlowClient() {
     throw new Error('Variables de entorno FLOW_API_KEY y FLOW_SECRET_KEY son requeridas');
   }
   
-  console.log('Creando Flow client desde variables de entorno:', {
+  console.log('Creando Flow client desde variables de entorno (PRODUCCIÓN):', {
     hasApiKey: !!apiKey,
     hasSecretKey: !!secretKey,
     baseUrl: baseUrl,

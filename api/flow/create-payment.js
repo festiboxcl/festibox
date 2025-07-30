@@ -69,10 +69,16 @@ export default async function handler(req, res) {
     // Crear orden única con timestamp más preciso
     const commerceOrder = `FESTIBOX-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
-    // Obtener dominio desde headers (compatible con Vercel)
-    const host = req.headers.host;
-    const protocol = req.headers['x-forwarded-proto'] || 'https';
-    const baseUrlSite = `${protocol}://${host}`;
+    // Usar dominio fijo para producción (compatible con custom domain)
+    const baseUrlSite = process.env.VERCEL_ENV === 'production' 
+      ? 'https://festibox.vercel.app'
+      : `https://${req.headers.host}`;
+
+    console.log('🌐 Configuración de URLs:', {
+      vercelEnv: process.env.VERCEL_ENV,
+      host: req.headers.host,
+      baseUrlSite: baseUrlSite
+    });
 
     // Preparar datos para Flow
     const paymentData = {
