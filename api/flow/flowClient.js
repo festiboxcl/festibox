@@ -6,17 +6,30 @@ class FlowClient {
     this.apiKey = apiKey;
     this.secretKey = secretKey;
     this.baseUrl = baseUrl;
+    
+    console.log('Flow Client inicializado con:', {
+      apiKey: this.apiKey?.substring(0, 10) + '...',
+      apiKeyFull: this.apiKey,
+      baseUrl: this.baseUrl
+    });
   }
 
   createSignature(params) {
-    const sortedParams = Object.keys(params)
-      .sort()
-      .map(key => `${key}=${params[key]}`)
-      .join('&');
+    // Ordenar parámetros alfabéticamente por nombre
+    const sortedKeys = Object.keys(params).sort();
+    
+    // Concatenar como: key1value1key2value2key3value3... (sin separadores)
+    // Según la documentación de Flow
+    let toSign = '';
+    for (const key of sortedKeys) {
+      toSign += key + params[key];
+    }
+    
+    console.log('String para firmar:', toSign);
 
     return crypto
       .createHmac('sha256', this.secretKey)
-      .update(sortedParams)
+      .update(toSign)
       .digest('hex');
   }
 
@@ -49,15 +62,11 @@ class FlowClient {
     console.log('Flow Client - Enviando pago:', {
       url: `${this.baseUrl}/payment/create`,
       commerceOrder: params.commerceOrder,
-      amount: params.amount,
-      apiKey: this.apiKey?.substring(0, 10) + '...'
+      amount: params.amount
     });
     
-    // Log detallado de parámetros
-    console.log('Flow Client - Parámetros completos:', {
+    console.log('Flow Client - Parámetros exactos:', {
       apiKey: this.apiKey,
-      apiKeyLength: this.apiKey?.length,
-      signature: signature,
       formData: formData.toString()
     });
 
@@ -71,6 +80,7 @@ class FlowClient {
     });
 
     const responseText = await response.text();
+    console.log('Flow Client - Respuesta bruta:', responseText);
     
     if (!response.ok) {
       throw new Error(`Error HTTP: ${response.status} ${response.statusText} - ${responseText}`);
@@ -85,26 +95,12 @@ class FlowClient {
 }
 
 export function createFlowClient() {
-  // Obtener credenciales y limpiarlas de posibles espacios
-  const apiKey = process.env.FLOW_API_KEY?.trim();
-  const secretKey = process.env.FLOW_SECRET_KEY?.trim();
-  const baseUrl = (process.env.FLOW_BASE_URL || 'https://sandbox.flow.cl/api').trim();
+  // Usar credenciales exactas en lugar de variables de entorno
+  const apiKey = '1F35DEE4-1B10-49E6-A226-55845L8E1A12';
+  const secretKey = 'f6944874c7b8a70c8da78c14f03f853b50019c31';
+  const baseUrl = 'https://sandbox.flow.cl/api';
   
-  console.log('Flow Client - Variables sin procesar:', {
-    hasApiKey: !!process.env.FLOW_API_KEY,
-    hasSecretKey: !!process.env.FLOW_SECRET_KEY,
-    hasBaseUrl: !!process.env.FLOW_BASE_URL,
-  });
-  
-  console.log('Flow Client - Credenciales procesadas:', {
-    apiKey: apiKey,
-    secretKey: secretKey ? '***' : null,
-    baseUrl: baseUrl
-  });
-  
-  if (!apiKey || !secretKey) {
-    throw new Error('Credenciales de Flow no configuradas');
-  }
+  console.log('Usando credenciales exactas de Flow (hardcoded)');
   
   return new FlowClient(apiKey, secretKey, baseUrl);
 }
