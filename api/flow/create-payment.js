@@ -105,6 +105,8 @@ export default async function handler(req, res) {
       urlConfirmation: paymentData.urlConfirmation,
       urlReturn: paymentData.urlReturn
     };
+    
+    console.log('ApiKey utilizada:', apiKey);
 
     // Crear firma
     const signature = createSignature(params, secretKey);
@@ -125,6 +127,9 @@ export default async function handler(req, res) {
     });
 
     // Hacer petición a Flow
+    console.log('URL completo de petición:', `${baseUrl}/payment/create`);
+    console.log('Cuerpo completo enviado:', formData.toString());
+    
     const response = await fetch(`${baseUrl}/payment/create`, {
       method: 'POST',
       headers: {
