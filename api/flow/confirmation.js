@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import flowConfig from './flowConfig.js';
 
 // Crear firma HMAC-SHA256 para verificar confirmación de Flow
 function createSignature(params, secretKey) {
@@ -20,7 +21,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const secretKey = process.env.FLOW_SECRET_KEY;
+    const secretKey = flowConfig.secretKey;
     
     if (!secretKey) {
       console.error('Secret Key de Flow no configurada');

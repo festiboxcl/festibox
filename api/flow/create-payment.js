@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import flowConfig from './flowConfig.js';
 
 // Crear firma HMAC-SHA256 para Flow
 function createSignature(params, secretKey) {
@@ -38,10 +39,10 @@ export default async function handler(req, res) {
       baseUrl: process.env.FLOW_BASE_URL
     });
 
-    // Obtener credenciales de las variables de entorno
-    const apiKey = process.env.FLOW_API_KEY;
-    const secretKey = process.env.FLOW_SECRET_KEY;
-    const baseUrl = process.env.FLOW_BASE_URL || 'https://sandbox.flow.cl/api';
+    // Obtener credenciales desde flowConfig
+    const apiKey = flowConfig.apiKey;
+    const secretKey = flowConfig.secretKey;
+    const baseUrl = flowConfig.baseUrl;
 
     if (!apiKey || !secretKey) {
       console.error('❌ Credenciales de Flow no configuradas:', {
