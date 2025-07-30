@@ -1,18 +1,4 @@
-import crypto from 'crypto';
-import flowConfig from './flowConfig.js';
-
-// Crear firma HMAC-SHA256 para Flow
-function createSignature(params, secretKey) {
-  const sortedParams = Object.keys(params)
-    .sort()
-    .map(key => `${key}=${params[key]}`)
-    .join('&');
-
-  return crypto
-    .createHmac('sha256', secretKey)
-    .update(sortedParams)
-    .digest('hex');
-}
+import { createFlowClient } from './flowClient.js';
 
 // Generar subject del pago
 function generateSubject(items) {
@@ -31,26 +17,17 @@ export default async function handler(req, res) {
 
   try {
     console.log('🔍 Inicio de create-payment');
-    console.log('🔍 Variables de entorno disponibles:', {
-      hasApiKey: !!process.env.FLOW_API_KEY,
-      hasSecretKey: !!process.env.FLOW_SECRET_KEY,
-      hasBaseUrl: !!process.env.FLOW_BASE_URL,
-      apiKeyStart: process.env.FLOW_API_KEY?.substring(0, 10) + '...',
-      baseUrl: process.env.FLOW_BASE_URL
-    });
-
-    // Obtener credenciales desde flowConfig
-    const apiKey = flowConfig.apiKey;
-    const secretKey = flowConfig.secretKey;
-    const baseUrl = flowConfig.baseUrl;
-
-    if (!apiKey || !secretKey) {
-      console.error('❌ Credenciales de Flow no configuradas:', {
-        hasApiKey: !!apiKey,
-        hasSecretKey: !!secretKey
-      });
+    
+    // Crear cliente de Flow
+    let flowClient;
+    try {
+      flowClient = createFlowClient();
+      console.log('🔍 Flow client creado exitosamente');
+    } catch (error) {
+      console.error('❌ Error creando Flow client:', error.message);
       return res.status(500).json({ 
-        error: 'Credenciales de Flow no configuradas en el servidor' 
+        error: 'Credenciales de Flow no configuradas en el servidor',
+        details: error.message
       });
     }
 
@@ -95,95 +72,48 @@ export default async function handler(req, res) {
       }
     };
 
-    // Preparar parámetros para la firma
-    const params = {
-      apiKey,
-      commerceOrder: paymentData.commerceOrder,
-      subject: paymentData.subject,
-      currency: paymentData.currency,
-      amount: paymentData.amount,
-      email: paymentData.email,
-      urlConfirmation: paymentData.urlConfirmation,
-      urlReturn: paymentData.urlReturn
-    };
-    
-    console.log('ApiKey utilizada:', apiKey);
-
-    // Crear firma
-    const signature = createSignature(params, secretKey);
-
-    // Preparar datos para enviar a Flow
-    const formData = new URLSearchParams();
-    Object.entries(params).forEach(([key, value]) => {
-      formData.append(key, value.toString());
-    });
-    formData.append('s', signature);
-    formData.append('optional', JSON.stringify(paymentData.optional));
-
-    console.log('Enviando pago a Flow:', {
-      url: `${baseUrl}/payment/create`,
+    console.log('Enviando pago a Flow con el cliente:', {
       commerceOrder,
       amount: paymentData.amount,
       email: paymentData.email
     });
-
-    // Hacer petición a Flow
-    console.log('URL completo de petición:', `${baseUrl}/payment/create`);
-    console.log('Cuerpo completo enviado:', formData.toString());
     
-    const response = await fetch(`${baseUrl}/payment/create`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: formData
-    });
-
-    const responseText = await response.text();
-    console.log('Respuesta de Flow (raw):', responseText);
-
-    if (!response.ok) {
-      console.error('Error HTTP de Flow:', response.status, response.statusText);
-      return res.status(500).json({ 
-        error: `Error de Flow: ${response.status} ${response.statusText}`,
-        details: responseText
-      });
-    }
-
-    let result;
     try {
-      result = JSON.parse(responseText);
-    } catch (parseError) {
-      console.error('Error parseando respuesta de Flow:', parseError);
+      // Usar el cliente para crear el pago
+      const result = await flowClient.createPayment(paymentData);
+      console.log('Respuesta de Flow procesada:', result);
+      
+      if (result.status !== 'ok') {
+        console.error('Flow respondió con error:', result);
+        return res.status(400).json({ 
+          error: `Error de Flow: ${result.message || 'Error desconocido'}`,
+          details: result
+        });
+      }
+
+      // Guardar información del pedido (opcional - podrías usar una base de datos)
+      console.log('Pago creado exitosamente:', {
+        commerceOrder,
+        flowOrder: result.flowOrder,
+        token: result.token
+      });
+
+      // Responder con los datos del pago
+      res.status(200).json({
+        success: true,
+        flowOrder: result.flowOrder,
+        url: result.url,
+        token: result.token,
+        commerceOrder
+      });
+      
+    } catch (flowError) {
+      console.error('Error en la comunicación con Flow:', flowError);
       return res.status(500).json({ 
-        error: 'Respuesta inválida de Flow',
-        details: responseText
+        error: 'Error comunicándose con Flow', 
+        details: flowError instanceof Error ? flowError.message : String(flowError)
       });
     }
-
-    if (result.status !== 'ok') {
-      console.error('Flow respondió con error:', result);
-      return res.status(400).json({ 
-        error: `Error de Flow: ${result.message || 'Error desconocido'}`,
-        details: result
-      });
-    }
-
-    // Guardar información del pedido (opcional - podrías usar una base de datos)
-    console.log('Pago creado exitosamente:', {
-      commerceOrder,
-      flowOrder: result.flowOrder,
-      token: result.token
-    });
-
-    // Responder con los datos del pago
-    res.status(200).json({
-      success: true,
-      flowOrder: result.flowOrder,
-      url: result.url,
-      token: result.token,
-      commerceOrder
-    });
 
   } catch (error) {
     console.error('❌ Error en create-payment:', error);
