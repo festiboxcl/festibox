@@ -1,0 +1,144 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Animaciones fluidas estilo Apple */
+@layer utilities {
+  .animate-apple-bounce {
+    animation: apple-bounce 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+  
+  .animate-apple-fade-in {
+    animation: apple-fade-in 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  
+  .animate-apple-slide-up {
+    animation: apple-slide-up 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  
+  .transition-apple {
+    transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  
+  .transition-apple-spring {
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+}
+
+@keyframes apple-bounce {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes apple-fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes apple-slide-up {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Efectos hover mejorados */
+.hover-lift {
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.hover-lift:hover {
+  transform: translateY(-8px) scale(1.02);
+}
+
+/* Glassmorphism mejorado */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Scrollbar personalizado estilo Apple */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Efectos de focus mejorados */
+.focus-ring {
+  transition: box-shadow 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.focus-ring:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+@layer base {
+  * {
+    /* Evitar zoom en inputs en iOS */
+    -webkit-text-size-adjust: 100%;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  html, body {
+    font-family: 'Poppins', system-ui, sans-serif;
+    /* Evitar scroll horizontal */
+    overflow-x: hidden;
+    /* Asegurar que el ancho no exceda la pantalla */
+    max-width: 100vw;
+    /* Evitar zoom en mobile */
+    touch-action: manipulation;
+  }
+  
+  /* Evitar zoom en inputs específicamente */
+  input, textarea, select {
+    font-size: 16px; /* Mínimo para evitar zoom en iOS */
+    touch-action: manipulation;
+  }
+  
+  /* Asegurar que ningún elemento sobresalga */
+  #root {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+}
