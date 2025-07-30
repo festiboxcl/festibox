@@ -21,7 +21,7 @@ async function sendEmailWithResend(emailData) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      from: 'FestiBox <pedidos@festibox.cl>', // Dominio verificado en Resend
+      from: 'FestiBox <onboarding@resend.dev>', // Usando dominio por defecto de Resend
       to: emailData.to,
       subject: emailData.subject,
       html: emailData.html,
