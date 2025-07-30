@@ -3,10 +3,5 @@
     "api/flow/*.ts": {
       "runtime": "@vercel/node"
     }
-  },
-  "env": {
-    "FLOW_API_KEY": "@flow-api-key",
-    "FLOW_SECRET_KEY": "@flow-secret-key", 
-    "FLOW_BASE_URL": "@flow-base-url"
   }
 }
