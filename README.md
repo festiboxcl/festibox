@@ -95,6 +95,16 @@ src/
 - **Instagram**: [@festiboxcl](https://instagram.com/festiboxcl)
 - **Dominio**: festibox.cl
 
+## 🚀 Despliegue
+
+Este proyecto está configurado para desplegarse fácilmente en Vercel:
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/clfestibox/festibox)
+
+### Variables de Entorno
+
+Copia `.env.example` a `.env.local` y configura las variables necesarias.
+
 ---
 
 *Desarrollado con ❤️ para crear regalos que explotan de amor y recuerdos*
