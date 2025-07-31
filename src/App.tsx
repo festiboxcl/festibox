@@ -10,7 +10,7 @@ import { ShoppingCartComponent } from './components/ShoppingCart';
 import { CheckoutModal } from './components/CheckoutModal';
 import { FAQModal } from './components/FAQModal';
 import { SEO, useProductSEO } from './components/SEO';
-import { ShoppingCart, Heart, Camera, Palette, Gift, Instagram, MessageCircle, Mail, HelpCircle } from 'lucide-react';
+import { ShoppingCart, Heart, Camera, Palette, Gift, Instagram, MessageCircle, Mail, HelpCircle, X } from 'lucide-react';
 // import { assets } from './assets';
 import { useProductWithOptions } from './hooks/useProductWithOptions';
 import { useShoppingCart } from './hooks/useShoppingCart';
@@ -486,7 +486,7 @@ function App() {
             <div className="flex justify-center mb-4">
               <Logo size="md" />
             </div>
-            <div className="flex justify-center space-x-6 text-sm mb-6">
+            <div className="flex flex-wrap justify-center gap-3 sm:gap-6 text-sm mb-6">
               <motion.button
                 onClick={() => {
                   playClick();
@@ -496,7 +496,7 @@ function App() {
                 {...animations.hoverScale}
               >
                 <HelpCircle className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                Preguntas Frecuentes
+                <span className="text-xs sm:text-sm">FAQ</span>
               </motion.button>
               <motion.a 
                 href="https://instagram.com/festiboxcl" 
@@ -507,7 +507,7 @@ function App() {
                 onClick={() => playClick()}
               >
                 <Instagram className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                Instagram
+                <span className="text-xs sm:text-sm">Instagram</span>
               </motion.a>
               <motion.a 
                 href="https://wa.me/message/TBSLQVGBXZ3QM1" 
@@ -518,7 +518,7 @@ function App() {
                 onClick={() => playClick()}
               >
                 <MessageCircle className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                WhatsApp
+                <span className="text-xs sm:text-sm">WhatsApp</span>
               </motion.a>
               <motion.a 
                 href="mailto:contacto@festibox.cl" 
@@ -527,13 +527,14 @@ function App() {
                 onClick={() => playClick()}
               >
                 <Mail className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                Contacto
+                <span className="text-xs sm:text-sm">Email</span>
               </motion.a>
             </div>
-            <div className="text-xs text-gray-600 flex items-center justify-center gap-2">
-              <span>© 2025 FestiBox. Diseñado con</span>
-              <Heart className="w-3 h-3 text-red-500" />
-              <span>en Chile</span>
+            <div className="text-xs text-gray-600 flex flex-wrap items-center justify-center gap-1 sm:gap-2">
+              <span>© 2025 FestiBox.</span>
+              <span className="flex items-center gap-1">
+                Diseñado con <Heart className="w-3 h-3 text-red-500" /> en Chile
+              </span>
             </div>
           </div>
         </div>
