@@ -13,8 +13,8 @@ export const cropImageToSquare = (file: File, imagePosition?: ImagePosition): Pr
     const img = new Image();
     
     img.onload = () => {
-      // Tamaño del cuadrado final (para impresión)
-      const squareSize = 1000; // 1000x1000px es buena calidad para impresión
+      // Tamaño del cuadrado final (optimizado para impresión e redes sociales)
+      const squareSize = 1200; // 1200x1200px - perfecto para impresión 8x8cm (377 DPI) y redes sociales
       canvas.width = squareSize;
       canvas.height = squareSize;
       
