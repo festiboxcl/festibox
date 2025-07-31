@@ -13,8 +13,8 @@ export function SEO({
   title = "FestiBox - Regalos Únicos Personalizados Chile | Ideas de Regalo Perfectas",
   description = "¿Buscas el regalo perfecto? FestiBox crea regalos únicos personalizados con tus fotos favoritas. Ideas de regalo para cumpleaños, aniversarios, día de la madre, san valentín. ¡El regalo que nunca olvidarán!",
   keywords = "regalo único, regalo personalizado, ideas de regalo, regalo cumpleaños, regalo aniversario, regalo san valentín, regalo día de la madre, regalo especial, regalo con fotos, regalo sorpresa, regalo original Chile, regalos únicos, caja regalo, regalo para ella, regalo para él",
-  image = "/images/Banner%201.png",
-  url = "https://festibox.vercel.app",
+  image = "https://www.festibox.cl/images/Banner%201.png",
+  url = "https://www.festibox.cl",
   type = "website"
 }: SEOProps) {
   
@@ -90,7 +90,7 @@ export function useProductSEO(product: any) {
     title: productTitles[product.id] || `${product.name} - Regalo Único Personalizado | FestiBox Chile`,
     description: productDescriptions[product.id] || `${product.name} - ${product.description}. El regalo perfecto que estás buscando en FestiBox Chile.`,
     keywords: `${product.name}, regalo único, regalo personalizado, ideas de regalo, regalo ${product.category}, FestiBox Chile, ${product.id}`,
-    image: product.image || "/images/Banner%201.png",
-    url: `https://festibox.vercel.app/#${product.id}`
+    image: product.image || "https://www.festibox.cl/images/Banner%201.png",
+    url: `https://www.festibox.cl/#${product.id}`
   };
 }
