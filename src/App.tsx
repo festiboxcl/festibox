@@ -8,9 +8,9 @@ import { CardOptionSelector } from './components/CardOptionSelector';
 import { ProductConfirmationModal } from './components/ProductConfirmationModal';
 import { ShoppingCartComponent } from './components/ShoppingCart';
 import { CheckoutModal } from './components/CheckoutModal';
-import { FAQModal } from './components/FAQModal';
+import { FAQSection } from './components/FAQSection';
 import { SEO, useProductSEO } from './components/SEO';
-import { ShoppingCart, Heart, Camera, Palette, Gift, Instagram, MessageCircle, Mail, HelpCircle, X } from 'lucide-react';
+import { ShoppingCart, Heart, Camera, Palette, Gift, Instagram, MessageCircle, Mail, HelpCircle } from 'lucide-react';
 // import { assets } from './assets';
 import { useProductWithOptions } from './hooks/useProductWithOptions';
 import { useShoppingCart } from './hooks/useShoppingCart';
@@ -572,7 +572,7 @@ function App() {
       </AnimatePresence>
 
       {/* Modal FAQ */}
-      <FAQModal
+      <FAQSection
         isOpen={isFAQOpen}
         onClose={() => setIsFAQOpen(false)}
       />
