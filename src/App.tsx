@@ -8,8 +8,9 @@ import { CardOptionSelector } from './components/CardOptionSelector';
 import { ProductConfirmationModal } from './components/ProductConfirmationModal';
 import { ShoppingCartComponent } from './components/ShoppingCart';
 import { CheckoutModal } from './components/CheckoutModal';
+import { FAQModal } from './components/FAQModal';
 import { SEO, useProductSEO } from './components/SEO';
-import { ShoppingCart, Heart, Camera, Palette, Gift, Instagram, MessageCircle, Mail } from 'lucide-react';
+import { ShoppingCart, Heart, Camera, Palette, Gift, Instagram, MessageCircle, Mail, HelpCircle } from 'lucide-react';
 // import { assets } from './assets';
 import { useProductWithOptions } from './hooks/useProductWithOptions';
 import { useShoppingCart } from './hooks/useShoppingCart';
@@ -170,6 +171,7 @@ function App() {
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [pendingProduct, setPendingProduct] = useState<any>(null);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [isFAQOpen, setIsFAQOpen] = useState(false);
   
   // Hook de sonidos
   const { playClick, playSuccess, playSelect, playHover } = useSound();
@@ -349,6 +351,19 @@ function App() {
                 <Heart className="h-4 w-4" />
               </motion.button>
               <motion.button 
+                className="p-2 text-gray-600 hover:text-primary-600 transition-colors relative"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  playClick();
+                  setIsFAQOpen(true);
+                }}
+                onHoverStart={() => playHover()}
+                title="Preguntas Frecuentes"
+              >
+                <HelpCircle className="h-4 w-4" />
+              </motion.button>
+              <motion.button 
                 className="p-2 text-gray-600 hover:text-primary-600 relative transition-colors"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
@@ -471,7 +486,18 @@ function App() {
             <div className="flex justify-center mb-4">
               <Logo size="md" />
             </div>
-            <div className="flex justify-center space-x-8 text-sm mb-6">
+            <div className="flex justify-center space-x-6 text-sm mb-6">
+              <motion.button
+                onClick={() => {
+                  playClick();
+                  setIsFAQOpen(true);
+                }}
+                className="flex items-center gap-2 text-gray-700 hover:text-primary-600 transition-colors group"
+                {...animations.hoverScale}
+              >
+                <HelpCircle className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                Preguntas Frecuentes
+              </motion.button>
               <motion.a 
                 href="https://instagram.com/festiboxcl" 
                 target="_blank" 
@@ -543,6 +569,12 @@ function App() {
           />
         )}
       </AnimatePresence>
+
+      {/* Modal FAQ */}
+      <FAQModal
+        isOpen={isFAQOpen}
+        onClose={() => setIsFAQOpen(false)}
+      />
     </div>
   );
 }
