@@ -458,7 +458,7 @@ function App() {
                 Instagram
               </motion.a>
               <motion.a 
-                href="https://wa.me/56912345678" 
+                href="https://wa.me/message/TBSLQVGBXZ3QM1" 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="flex items-center gap-2 text-gray-700 hover:text-secondary-600 transition-colors group"
