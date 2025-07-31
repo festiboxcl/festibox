@@ -209,6 +209,8 @@ export function ShoppingCartComponent({
                           };
                           
                           console.log('🔄 CartItem convertido:', cartItem);
+                          console.log('📝 Mensajes en ShoppingCartItem original:', item.messages);
+                          console.log('📝 Mensajes en CartItem convertido:', cartItem.customizations.messages);
                           setPreviewProduct(cartItem);
                           setShowPreviewModal(true);
                           console.log('✅ Modal debería abrirse ahora');

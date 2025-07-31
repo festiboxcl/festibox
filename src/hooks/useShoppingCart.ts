@@ -6,6 +6,13 @@ import type {
 } from '../types';
 import type { ShippingOption, ShippingAddress } from '../services/shippingService';
 
+interface PhotoData {
+  base64: string;
+  name: string;
+  type: string;
+  size: number;
+}
+
 export function useShoppingCart() {
   const [cartItems, setCartItems] = useState<ShoppingCartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -13,17 +20,84 @@ export function useShoppingCart() {
   
   const flowService = new FlowService();
 
-  // Convertir File a Base64 para persistencia
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
+  // Comprimir imagen antes de guardar
+  const compressImage = (file: File, quality: number = 0.7): Promise<File> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+      const img = new Image();
+      
+      img.onload = () => {
+        // Reducir tamaño manteniendo aspect ratio
+        const maxSize = 800;
+        let { width, height } = img;
+        
+        if (width > height && width > maxSize) {
+          height = (height * maxSize) / width;
+          width = maxSize;
+        } else if (height > maxSize) {
+          width = (width * maxSize) / height;
+          height = maxSize;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const compressedFile = new File([blob], file.name, {
+              type: 'image/jpeg',
+              lastModified: Date.now()
+            });
+            resolve(compressedFile);
+          } else {
+            resolve(file); // Fallback al archivo original
+          }
+        }, 'image/jpeg', quality);
+      };
+      
+      img.src = URL.createObjectURL(file);
     });
   };
 
-  // Convertir Base64 a File
+  // Convertir File a Base64 comprimido
+  const fileToBase64 = async (file: File): Promise<PhotoData> => {
+    try {
+      // Comprimir primero si es imagen grande
+      const compressedFile = await compressImage(file, 0.8);
+      
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          resolve({
+            base64: reader.result as string,
+            name: file.name,
+            type: file.type,
+            size: compressedFile.size
+          });
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(compressedFile);
+      });
+    } catch (error) {
+      console.error('Error comprimiendo imagen:', error);
+      // Fallback a conversión normal
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          resolve({
+            base64: reader.result as string,
+            name: file.name,
+            type: file.type,
+            size: file.size
+          });
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+  };  // Convertir Base64 a File
   const base64ToFile = (base64: string, filename: string): File => {
     const arr = base64.split(',');
     const mime = arr[0].match(/:(.*?);/)![1];
@@ -40,11 +114,15 @@ export function useShoppingCart() {
   const prepareCartForStorage = async (items: ShoppingCartItem[]) => {
     const processedItems = await Promise.all(
       items.map(async (item) => {
-        const photoPromises = item.photos.map(async (photo, index) => ({
-          base64: await fileToBase64(photo),
-          name: photo.name || `photo-${index}.jpg`,
-          type: photo.type || 'image/jpeg'
-        }));
+        const photoPromises = item.photos.map(async (photo, index) => {
+          const photoData = await fileToBase64(photo);
+          return {
+            base64: photoData.base64,
+            name: photoData.name || photo.name || `photo-${index}.jpg`,
+            type: photoData.type || photo.type || 'image/jpeg',
+            size: photoData.size
+          };
+        });
         
         const photosData = await Promise.all(photoPromises);
         
@@ -60,37 +138,125 @@ export function useShoppingCart() {
 
   // Restaurar carrito desde localStorage (convertir Base64 a Files)
   const restoreCartFromStorage = (storedData: any[]): ShoppingCartItem[] => {
-    return storedData.map((item) => ({
-      ...item,
-      photos: item.photos.map((photoData: any) => {
-        if (typeof photoData === 'string') {
-          // Backward compatibility: si es string, asumir que es base64
-          return base64ToFile(photoData, 'restored-photo.jpg');
-        } else if (photoData.base64) {
-          // Nuevo formato con metadata
-          return base64ToFile(photoData.base64, photoData.name);
-        } else {
-          // Fallback para formatos no reconocidos
-          console.warn('Formato de foto no reconocido:', photoData);
+    console.log('🔄 Restaurando carrito desde localStorage:', storedData.length, 'items');
+    return storedData.map((item, itemIndex) => {
+      console.log(`📦 Restaurando item ${itemIndex + 1}:`, item.product?.name);
+      console.log(`📸 Fotos a restaurar:`, item.photos?.length || 0);
+      
+      const restoredPhotos = item.photos.map((photoData: any, index: number) => {
+        console.log(`🔍 Procesando foto ${index + 1}:`, {
+          type: typeof photoData,
+          hasBase64: !!(photoData && photoData.base64),
+          isString: typeof photoData === 'string',
+          structure: photoData
+        });
+        
+        try {
+          if (typeof photoData === 'string') {
+            // Backward compatibility: si es string, asumir que es base64
+            console.log(`📄 Convirtiendo foto ${index + 1} de string base64`);
+            return base64ToFile(photoData, `restored-photo-${index}.jpg`);
+          } else if (photoData && photoData.base64) {
+            // Nuevo formato con metadata
+            console.log(`📄 Convirtiendo foto ${index + 1} de objeto con base64:`, {
+              name: photoData.name,
+              type: photoData.type,
+              size: photoData.size
+            });
+            return base64ToFile(photoData.base64, photoData.name || `photo-${index}.jpg`);
+          } else {
+            // Fallback para formatos no reconocidos
+            console.warn('⚠️ Formato de foto no reconocido:', photoData);
+            return null;
+          }
+        } catch (error) {
+          console.error('❌ Error restaurando foto:', error, photoData);
           return null;
         }
-      }).filter(Boolean) // Filtrar elementos null
-    }));
+      }).filter(Boolean); // Filtrar elementos null
+      
+      console.log(`✅ Item ${itemIndex + 1} restaurado con ${restoredPhotos.length} fotos`);
+      
+      return {
+        ...item,
+        photos: restoredPhotos
+      };
+    });
   };
 
   // Cargar carrito del localStorage al iniciar
   useEffect(() => {
-    const savedCart = localStorage.getItem('festibox-cart');
-    if (savedCart) {
-      try {
-        const parsed = JSON.parse(savedCart);
-        const restoredItems = restoreCartFromStorage(parsed);
-        setCartItems(restoredItems);
-      } catch (error) {
-        console.error('Error cargando carrito:', error);
-        localStorage.removeItem('festibox-cart');
+    const loadCart = () => {
+      console.log('🔄 Iniciando carga del carrito desde localStorage...');
+      
+      // Intentar cargar carrito completo primero
+      const savedCart = localStorage.getItem('festibox-cart');
+      console.log('💾 ¿Hay carrito completo guardado?', !!savedCart);
+      
+      if (savedCart) {
+        try {
+          console.log('📏 Tamaño del carrito guardado:', (savedCart.length / 1024).toFixed(2), 'KB');
+          const parsed = JSON.parse(savedCart);
+          console.log('📦 Estructura del carrito guardado:', parsed.length, 'items');
+          console.log('🔍 Primer item del carrito guardado:', parsed[0]);
+          console.log('📸 Fotos en primer item:', parsed[0]?.photos?.length || 0);
+          console.log('📸 Estructura de primera foto:', parsed[0]?.photos?.[0]);
+          
+          const restoredItems = restoreCartFromStorage(parsed);
+          setCartItems(restoredItems);
+          console.log('✅ Carrito completo restaurado:', restoredItems.length, 'items');
+          console.log('📋 Items restaurados:', restoredItems.map(item => ({
+            id: item.id,
+            productName: item.product.name,
+            photosCount: item.photos.length,
+            messagesCount: item.messages.length
+          })));
+          return;
+        } catch (error) {
+          console.error('❌ Error cargando carrito completo:', error);
+        }
       }
-    }
+      
+      // Fallback a metadatos
+      const metaCart = localStorage.getItem('festibox-cart-meta');
+      if (metaCart) {
+        try {
+          const parsed = JSON.parse(metaCart);
+          console.warn('⚠️ Carrito restaurado sin imágenes (metadatos únicamente)');
+          // Mostrar advertencia al usuario que las fotos se perdieron
+          setCartItems(parsed.map((item: any) => ({
+            ...item,
+            photos: [] // Sin fotos, usuario tendrá que subirlas de nuevo
+          })));
+          return;
+        } catch (error) {
+          console.error('Error cargando metadatos del carrito:', error);
+        }
+      }
+      
+      // Último fallback - solo datos esenciales
+      const essentialCart = localStorage.getItem('festibox-cart-essential');
+      if (essentialCart) {
+        try {
+          const parsed = JSON.parse(essentialCart);
+          console.warn('⚠️ Solo datos esenciales del carrito restaurados');
+          setCartItems(parsed.map((item: any) => ({
+            ...item,
+            photos: [],
+            images: [],
+            configuration: null
+          })));
+        } catch (error) {
+          console.error('Error cargando datos esenciales:', error);
+          // Limpiar localStorage corrupto
+          localStorage.removeItem('festibox-cart');
+          localStorage.removeItem('festibox-cart-meta');
+          localStorage.removeItem('festibox-cart-essential');
+        }
+      }
+    };
+    
+    loadCart();
   }, []);
 
   // Guardar carrito en localStorage cuando cambie
@@ -99,12 +265,56 @@ export function useShoppingCart() {
       if (cartItems.length > 0) {
         try {
           const preparedItems = await prepareCartForStorage(cartItems);
-          localStorage.setItem('festibox-cart', JSON.stringify(preparedItems));
+          const cartData = JSON.stringify(preparedItems);
+          
+          // Verificar tamaño antes de guardar
+          const sizeMB = new Blob([cartData]).size / (1024 * 1024);
+          console.log(`💾 Tamaño del carrito: ${sizeMB.toFixed(2)}MB`);
+          
+          if (sizeMB > 4) { // Límite de 4MB
+            console.warn('⚠️ Carrito muy grande, guardando solo metadatos');
+            // Guardar solo la estructura sin las imágenes como fallback
+            const lightweightCart = cartItems.map(item => ({
+              ...item,
+              photos: item.photos.map(photo => ({
+                name: photo.name,
+                type: photo.type,
+                size: photo.size
+              }))
+            }));
+            localStorage.setItem('festibox-cart-meta', JSON.stringify(lightweightCart));
+          } else {
+            localStorage.setItem('festibox-cart', cartData);
+            // Limpiar fallback si existe
+            localStorage.removeItem('festibox-cart-meta');
+          }
         } catch (error) {
           console.error('Error guardando carrito:', error);
+          
+          if (error instanceof DOMException && error.code === 22) {
+            // QuotaExceededError - localStorage lleno
+            console.warn('📦 LocalStorage lleno, guardando solo metadatos del carrito');
+            try {
+              // Limpiar localStorage de otros datos si es necesario
+              const essentialData = cartItems.map(item => ({
+                id: item.id,
+                product: item.product,
+                quantity: item.quantity,
+                price: item.price,
+                photoCount: item.photos.length,
+                messages: item.messages
+              }));
+              localStorage.setItem('festibox-cart-essential', JSON.stringify(essentialData));
+            } catch (fallbackError) {
+              console.error('Error guardando datos esenciales:', fallbackError);
+            }
+          }
         }
       } else {
+        // Limpiar todos los tipos de datos del carrito
         localStorage.removeItem('festibox-cart');
+        localStorage.removeItem('festibox-cart-meta');
+        localStorage.removeItem('festibox-cart-essential');
       }
     };
     

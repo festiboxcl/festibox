@@ -18,8 +18,13 @@ export function ProductPreviewModal({ isOpen, onClose, product }: ProductPreview
   console.log('🎭 ProductPreviewModal render');
   console.log('🔓 isOpen:', isOpen);
   console.log('📦 Product data received:', product);
-  
-  if (!isOpen) {
+    console.log('🔍 Claves disponibles en product:', Object.keys(product));
+    console.log('🔍 product.photos:', product.photos);
+    console.log('🔍 product.images:', product.images);
+    console.log('🔍 product.messages:', product.messages);
+    console.log('🔍 product.customizations:', product.customizations);
+    console.log('🔍 product.customizations?.messages:', product.customizations?.messages);
+    console.log('🔍 product.configuration:', product.configuration);  if (!isOpen) {
     console.log('❌ Modal cerrado, no renderizando');
     return null;
   }
@@ -35,30 +40,94 @@ export function ProductPreviewModal({ isOpen, onClose, product }: ProductPreview
   const organizeContentByCubes = (): CubeSpace[][] => {
     const cubes: CubeSpace[][] = [];
     
-    // Extraer datos
-    const photos = product.images?.map((img: any) => img.file) || [];
-    const messages = product.customizations?.messages || [];
-    const configuration = product.customizations?.configuration || product.configuration;
+    // Extraer datos según la estructura ShoppingCartItem
+    let photos: any[] = [];
+    let messages: string[] = [];
+    
+    // ShoppingCartItem tiene photos: File[] directamente
+    if (product.photos?.length > 0) {
+      photos = product.photos.filter(Boolean);
+      console.log('📸 Fotos extraídas de photos:', photos.length, 'Tipos:', photos.map((p: any) => typeof p));
+    }
+    // Fallback para estructura CartItem con images: UploadedImage[]
+    else if (product.images?.length > 0) {
+      photos = product.images.map((img: any) => img.file).filter(Boolean);
+      console.log('📸 Fotos extraídas de images:', photos.length, 'Tipos:', photos.map((p: any) => typeof p));
+    }
+    
+    console.log('📸 Fotos finales:', photos);
+    
+    // ShoppingCartItem tiene messages: string[] directamente EN EL NIVEL PRINCIPAL
+    if (product.messages?.length > 0) {
+      messages = product.messages.filter(Boolean);
+      console.log('💬 Mensajes extraídos de messages (nivel principal):', messages.length);
+    }
+    // Fallback para customizations
+    else if (product.customizations?.messages?.length > 0) {
+      messages = product.customizations.messages.filter(Boolean);
+      console.log('💬 Mensajes extraídos de customizations:', messages.length);
+    }
+    
+    console.log('💬 Mensajes finales:', messages);
+    console.log('💬 Detalles de mensajes:', messages.map((m, i) => `${i + 1}: "${m}"`));
+    
+    const configuration = product.configuration || product.customizations?.configuration;
     
     console.log('🔧 Configuración:', configuration);
     console.log('📸 Fotos disponibles:', photos.length);
     console.log('💬 Mensajes disponibles:', messages.length);
     
-    if (!configuration || !configuration.cubes) {
-      console.warn('⚠️ No hay configuración de cubos, usando fallback');
+    if (!configuration || !configuration.cubes || configuration.cubes.length === 0) {
+      console.warn('⚠️ No hay configuración de cubos válida, usando fallback');
       // Fallback para productos sin configuración clara
       const isTriple = product.product?.name?.toLowerCase()?.includes('triple') || false;
       const cubeCount = isTriple ? 3 : 1;
       const spacesPerCube = 4;
       
+      console.log('🔧 Fallback - Creando', cubeCount, 'cubo(s) con', spacesPerCube, 'espacios cada uno');
+      console.log('📸 Fotos disponibles para organizar:', photos.length);
+      console.log('💬 Mensajes disponibles para organizar:', messages.length);
+      
       for (let cubeIndex = 0; cubeIndex < cubeCount; cubeIndex++) {
         const cubeSpaces: CubeSpace[] = [];
+        
+        // Primero llenar con fotos disponibles
+        let photoIndex = cubeIndex * spacesPerCube;
+        let messageIndex = 0;
+        
         for (let spaceIndex = 0; spaceIndex < spacesPerCube; spaceIndex++) {
-          const globalIndex = cubeIndex * spacesPerCube + spaceIndex;
+          let spaceContent = null;
+          let spaceType: 'photo' | 'message' | 'empty' = 'empty';
+          
+          // Si hay una foto disponible para este espacio
+          if (photoIndex < photos.length && photos[photoIndex]) {
+            spaceContent = photos[photoIndex];
+            spaceType = 'photo';
+            photoIndex++;
+          }
+          // Si no hay foto, pero hay mensaje disponible
+          else if (messageIndex < messages.length && messages[messageIndex]) {
+            spaceContent = messages[messageIndex];
+            spaceType = 'message';
+            messageIndex++;
+          }
+          // Si no hay contenido, dejar vacío
+          else {
+            spaceContent = null;
+            spaceType = 'empty';
+          }
+          
           cubeSpaces.push({
-            type: photos[globalIndex] ? 'photo' as const : (messages[globalIndex] ? 'message' as const : 'empty' as const),
-            content: photos[globalIndex] || messages[globalIndex] || null,
+            type: spaceType,
+            content: spaceContent,
             position: spaceIndex + 1,
+          });
+          
+          console.log(`📦 Cubo ${cubeIndex + 1}, Espacio ${spaceIndex + 1}:`, {
+            photoIndex: photoIndex - 1,
+            messageIndex: messageIndex - (spaceType === 'message' ? 1 : 0),
+            type: spaceType,
+            hasContent: !!spaceContent
           });
         }
         cubes.push(cubeSpaces);
@@ -170,6 +239,11 @@ export function ProductPreviewModal({ isOpen, onClose, product }: ProductPreview
                               src={typeof space.content === 'string' ? space.content : URL.createObjectURL(space.content)}
                               alt={`Foto ${spaceIndex + 1}`}
                               className="w-full h-full object-cover"
+                              onLoad={() => console.log('✅ Imagen cargada:', spaceIndex + 1)}
+                              onError={(e) => {
+                                console.error('❌ Error cargando imagen:', spaceIndex + 1, space.content);
+                                console.error('Error details:', e);
+                              }}
                             />
                           </div>
                         )}
