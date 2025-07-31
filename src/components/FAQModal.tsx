@@ -118,7 +118,7 @@ const faqData: FAQItem[] = [
 
 const categories = ['Productos', 'Personalización', 'Envíos', 'Pagos'];
 
-export function FAQSection({ isOpen, onClose }: FAQProps) {
+function FAQModal({ isOpen, onClose }: FAQProps) {
   const [selectedCategory, setSelectedCategory] = useState('Productos');
   const [openItems, setOpenItems] = useState<string[]>([]);
 
@@ -140,15 +140,10 @@ export function FAQSection({ isOpen, onClose }: FAQProps) {
         initial={{ opacity: 0, y: 100, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 100, scale: 0.95 }}
-        className="bg-white/95 backdrop-blur-xl border border-white/20 shadow-2xl w-full h-full sm:h-auto sm:max-h-[90vh] sm:rounded-xl sm:max-w-4xl overflow-hidden"
-        style={{
-          background: 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.9) 100%)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-        }}
+        className="bg-white w-full h-full sm:h-auto sm:max-h-[90vh] sm:rounded-xl sm:shadow-2xl sm:max-w-4xl overflow-hidden"
       >
-        {/* Header - Mobile optimizado con liquid glass */}
-        <div className="p-4 sm:p-6 border-b border-white/30 bg-gradient-to-r from-primary-50/80 to-secondary-50/80 backdrop-blur-sm sticky top-0 z-10">
+        {/* Header - Mobile optimizado */}
+        <div className="p-4 sm:p-6 border-b border-gray-200 bg-gradient-to-r from-primary-50 to-secondary-50 sticky top-0 z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <HelpCircle className="w-5 h-5 sm:w-6 sm:h-6 text-primary-600 flex-shrink-0" />
@@ -159,7 +154,7 @@ export function FAQSection({ isOpen, onClose }: FAQProps) {
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors p-2 -m-2 hover:bg-white/50 rounded-lg"
+              className="text-gray-400 hover:text-gray-600 transition-colors p-2 -m-2"
             >
               <X className="w-5 h-5" />
             </button>
@@ -168,18 +163,18 @@ export function FAQSection({ isOpen, onClose }: FAQProps) {
 
         {/* Layout responsive: Stack vertical en mobile, horizontal en desktop */}
         <div className="flex flex-col sm:flex-row h-full sm:h-[70vh]">
-          {/* Categorías - Horizontal scroll en mobile, sidebar en desktop con liquid glass */}
-          <div className="w-full sm:w-1/4 bg-gray-50/80 backdrop-blur-sm border-b sm:border-b-0 sm:border-r border-white/30 p-3 sm:p-4">
+          {/* Categorías - Horizontal scroll en mobile, sidebar en desktop */}
+          <div className="w-full sm:w-1/4 bg-gray-50 border-b sm:border-b-0 sm:border-r border-gray-200 p-3 sm:p-4">
             <h4 className="font-medium text-gray-900 mb-3 text-sm sm:text-base">Categorías</h4>
             <div className="flex sm:flex-col gap-2 overflow-x-auto sm:overflow-x-visible pb-2 sm:pb-0">
               {categories.map((category) => (
                 <button
                   key={category}
                   onClick={() => setSelectedCategory(category)}
-                  className={`flex-shrink-0 sm:w-full text-left px-3 py-2 rounded-lg transition-all duration-200 text-sm sm:text-base whitespace-nowrap sm:whitespace-normal ${
+                  className={`flex-shrink-0 sm:w-full text-left px-3 py-2 rounded-lg transition-colors text-sm sm:text-base whitespace-nowrap sm:whitespace-normal ${
                     selectedCategory === category
-                      ? 'bg-primary-100/80 text-primary-700 font-medium backdrop-blur-sm border border-primary-200/50'
-                      : 'text-gray-600 hover:bg-white/70 bg-white/50 sm:bg-transparent backdrop-blur-sm border border-transparent hover:border-white/50'
+                      ? 'bg-primary-100 text-primary-700 font-medium'
+                      : 'text-gray-600 hover:bg-gray-100 bg-white sm:bg-transparent'
                   }`}
                 >
                   {category}
@@ -201,10 +196,10 @@ export function FAQSection({ isOpen, onClose }: FAQProps) {
                   const isOpen = openItems.includes(item.id);
                   
                   return (
-                    <div key={item.id} className="border border-white/30 rounded-lg bg-white/50 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-200">
+                    <div key={item.id} className="border border-gray-200 rounded-lg">
                       <button
                         onClick={() => toggleItem(item.id)}
-                        className="w-full flex items-center justify-between p-3 sm:p-4 text-left hover:bg-white/70 transition-all duration-200 rounded-lg"
+                        className="w-full flex items-center justify-between p-3 sm:p-4 text-left hover:bg-gray-50 transition-colors"
                       >
                         <div className="flex items-start gap-3 flex-1 min-w-0">
                           <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary-600 flex-shrink-0 mt-0.5" />
@@ -213,7 +208,7 @@ export function FAQSection({ isOpen, onClose }: FAQProps) {
                           </span>
                         </div>
                         <ChevronDown 
-                          className={`w-4 h-4 sm:w-5 sm:h-5 text-gray-400 transition-transform duration-200 flex-shrink-0 ${
+                          className={`w-4 h-4 sm:w-5 sm:h-5 text-gray-400 transition-transform flex-shrink-0 ${
                             isOpen ? 'rotate-180' : ''
                           }`}
                         />
@@ -228,7 +223,7 @@ export function FAQSection({ isOpen, onClose }: FAQProps) {
                             transition={{ duration: 0.2 }}
                             className="overflow-hidden"
                           >
-                            <div className="p-3 sm:p-4 pt-0 border-t border-white/30 bg-white/30 backdrop-blur-sm">
+                            <div className="p-3 sm:p-4 pt-0 border-t border-gray-100">
                               <div className="ml-7 sm:ml-8">
                                 <p className="text-gray-700 text-sm sm:text-base leading-relaxed">
                                   {item.answer}
@@ -243,8 +238,8 @@ export function FAQSection({ isOpen, onClose }: FAQProps) {
                 })}
               </div>
 
-              {/* Contacto adicional - Mobile friendly con liquid glass */}
-              <div className="mt-6 sm:mt-8 p-4 bg-gradient-to-r from-primary-50/70 to-secondary-50/70 backdrop-blur-sm border border-white/30 rounded-lg shadow-lg">
+              {/* Contacto adicional - Mobile friendly */}
+              <div className="mt-6 sm:mt-8 p-4 bg-gradient-to-r from-primary-50 to-secondary-50 rounded-lg">
                 <div className="text-center">
                   <h5 className="font-semibold text-gray-900 text-sm sm:text-base mb-2">
                     ¿No encuentras tu respuesta?
@@ -257,13 +252,13 @@ export function FAQSection({ isOpen, onClose }: FAQProps) {
                       href="https://wa.me/message/TBSLQVGBXZ3QM1"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center gap-2 bg-green-600/90 backdrop-blur-sm text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700/90 transition-all duration-200 shadow-lg hover:shadow-xl border border-green-500/20"
+                      className="inline-flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
                     >
                       WhatsApp
                     </a>
                     <a
                       href="mailto:contacto@festibox.cl"
-                      className="inline-flex items-center justify-center gap-2 bg-primary-600/90 backdrop-blur-sm text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700/90 transition-all duration-200 shadow-lg hover:shadow-xl border border-primary-500/20"
+                      className="inline-flex items-center justify-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
                     >
                       Email
                     </a>
@@ -277,3 +272,5 @@ export function FAQSection({ isOpen, onClose }: FAQProps) {
     </div>
   );
 }
+
+export default FAQModal;
