@@ -3,9 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, ShoppingCart, CreditCard, Package, Eye, Minus, Plus } from 'lucide-react';
 import { useSound } from '../hooks/useSound';
 import { animations } from '../utils/animations';
-import type { ShoppingCartItem } from '../types';
+import type { ShoppingCartItem, CartItem } from '../types';
 import type { ShippingOption, ShippingAddress } from '../services/shippingService';
 import { ShippingModal } from './ShippingModal';
+import { ProductPreviewModal } from './ProductPreviewModal';
 
 interface ShoppingCartProps {
   isOpen: boolean;
@@ -29,6 +30,8 @@ export function ShoppingCartComponent({
   const [showShippingModal, setShowShippingModal] = useState(false);
   const [selectedShipping, setSelectedShipping] = useState<ShippingOption | null>(null);
   const [shippingAddress, setShippingAddress] = useState<ShippingAddress | undefined>();
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [previewProduct, setPreviewProduct] = useState<CartItem | null>(null);
 
   // Calcular totales
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -141,6 +144,26 @@ export function ShoppingCartComponent({
                       onRemove={() => onRemoveItem(item.id)}
                       formatPrice={formatPrice}
                       playHover={playHover}
+                      onPreview={(item: ShoppingCartItem) => {
+                        // Convertir ShoppingCartItem a CartItem
+                        const cartItem: CartItem = {
+                          id: item.id,
+                          product: item.product,
+                          images: item.photos.map((photo: File, index: number) => ({
+                            id: `photo-${index}`,
+                            file: photo,
+                            preview: URL.createObjectURL(photo),
+                            position: index + 1
+                          })),
+                          quantity: item.quantity,
+                          customizations: {
+                            messages: item.messages,
+                            configuration: item.configuration
+                          }
+                        };
+                        setPreviewProduct(cartItem);
+                        setShowPreviewModal(true);
+                      }}
                     />
                   ))
                 )}
@@ -236,6 +259,18 @@ export function ShoppingCartComponent({
               productName={cartItems.length === 1 ? cartItems[0].product.name : `${cartItems.length} productos`}
             />
           )}
+          
+          {/* Product Preview Modal */}
+          {previewProduct && (
+            <ProductPreviewModal
+              isOpen={showPreviewModal}
+              onClose={() => {
+                setShowPreviewModal(false);
+                setPreviewProduct(null);
+              }}
+              product={previewProduct}
+            />
+          )}
         </>
       )}
     </AnimatePresence>
@@ -248,16 +283,16 @@ function CartItemCard({
   onQuantityChange, 
   onRemove, 
   formatPrice, 
-  playHover 
+  playHover,
+  onPreview
 }: {
   item: ShoppingCartItem;
   onQuantityChange: (itemId: string, quantity: number) => void;
   onRemove: () => void;
   formatPrice: (price: number) => string;
   playHover: () => void;
+  onPreview: (item: ShoppingCartItem) => void;
 }) {
-  const [showPreview, setShowPreview] = useState(false);
-
   return (
     <motion.div
       className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm"
@@ -290,7 +325,7 @@ function CartItemCard({
             
             {/* Preview Button */}
             <motion.button
-              onClick={() => setShowPreview(!showPreview)}
+              onClick={() => onPreview(item)}
               onHoverStart={playHover}
               className="flex items-center gap-1 text-xs text-gray-500 hover:text-primary-600 transition-colors"
               whileHover={{ scale: 1.05 }}
@@ -336,36 +371,6 @@ function CartItemCard({
           Eliminar
         </motion.button>
       </div>
-
-      {/* Preview Panel */}
-      <AnimatePresence>
-        {showPreview && (
-          <motion.div
-            className="mt-3 pt-3 border-t border-gray-100"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="grid grid-cols-4 gap-2 mb-3">
-              {item.photos.slice(0, 4).map((photo: File, index: number) => (
-                <div key={index} className="aspect-square rounded overflow-hidden bg-gray-100">
-                  <img 
-                    src={URL.createObjectURL(photo)} 
-                    alt={`Foto ${index + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ))}
-            </div>
-            {item.photos.length > 4 && (
-              <p className="text-xs text-gray-500 text-center">
-                +{item.photos.length - 4} fotos más
-              </p>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
     </motion.div>
   );
 }
