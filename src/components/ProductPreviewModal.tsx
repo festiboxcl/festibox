@@ -1,6 +1,5 @@
-import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { X, RotateCw, ZoomIn, ZoomOut } from 'lucide-react';
+import { X } from 'lucide-react';
 
 interface ProductPreviewModalProps {
   isOpen: boolean;
@@ -9,27 +8,30 @@ interface ProductPreviewModalProps {
 }
 
 export function ProductPreviewModal({ isOpen, onClose, product }: ProductPreviewModalProps) {
-  const [rotationY, setRotationY] = useState(0);
-  const [currentCube, setCurrentCube] = useState(0);
-  const [scale, setScale] = useState(1);
-
   if (!isOpen) return null;
+
+  // Debug para ver la estructura de datos
+  console.log('Product data in modal:', product);
 
   // Organizar fotos y mensajes por cubos
   const organizeContentByCubes = () => {
     const cubes = [];
-    const isTriple = product.name.toLowerCase().includes('triple');
+    const isTriple = product.product?.name?.toLowerCase()?.includes('triple') || false;
     const cubeCount = isTriple ? 3 : 1;
     const spacesPerCube = 4;
+
+    // Extraer fotos y mensajes de la estructura correcta
+    const photos = product.images?.map((img: any) => img.file) || [];
+    const messages = product.customizations?.messages || [];
 
     for (let cubeIndex = 0; cubeIndex < cubeCount; cubeIndex++) {
       const cubeSpaces = [];
       for (let spaceIndex = 0; spaceIndex < spacesPerCube; spaceIndex++) {
         const globalIndex = cubeIndex * spacesPerCube + spaceIndex;
         cubeSpaces.push({
-          photo: product.photos[globalIndex] || null,
-          message: product.messages[globalIndex] || '',
-          face: ['front', 'right', 'back', 'left'][spaceIndex],
+          photo: photos[globalIndex] || null,
+          message: messages[globalIndex] || '',
+          position: spaceIndex + 1,
         });
       }
       cubes.push(cubeSpaces);
@@ -38,19 +40,7 @@ export function ProductPreviewModal({ isOpen, onClose, product }: ProductPreview
   };
 
   const cubes = organizeContentByCubes();
-  const totalCubes = cubes.length;
-
-  const handleRotate = () => {
-    setRotationY(prev => prev + 90);
-  };
-
-  const handleZoomIn = () => {
-    setScale(prev => Math.min(prev + 0.2, 2));
-  };
-
-  const handleZoomOut = () => {
-    setScale(prev => Math.max(prev - 0.2, 0.5));
-  };
+  const isTriple = cubes.length > 1;
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -69,8 +59,8 @@ export function ProductPreviewModal({ isOpen, onClose, product }: ProductPreview
         <div className="p-6 border-b border-white/30 bg-gradient-to-r from-primary-50/80 to-secondary-50/80">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xl font-bold text-gray-900">Vista Previa 3D</h3>
-              <p className="text-gray-600 text-sm mt-1">{product.name}</p>
+              <h3 className="text-xl font-bold text-gray-900">Vista Previa</h3>
+              <p className="text-gray-600 text-sm mt-1">{product.product?.name || 'Producto personalizado'}</p>
             </div>
             <button
               onClick={onClose}
@@ -81,101 +71,80 @@ export function ProductPreviewModal({ isOpen, onClose, product }: ProductPreview
           </div>
         </div>
 
-        {/* Controls */}
-        <div className="p-4 border-b border-white/30 bg-white/50">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {totalCubes > 1 && (
-                <>
-                  <span className="text-sm font-medium text-gray-700">Cubo:</span>
-                  <div className="flex gap-2">
-                    {cubes.map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setCurrentCube(index)}
-                        className={`px-3 py-1 rounded-lg text-sm transition-all ${
-                          currentCube === index
-                            ? 'bg-primary-100 text-primary-700 font-medium'
-                            : 'bg-white/70 text-gray-600 hover:bg-white'
-                        }`}
-                      >
-                        {index + 1}
-                      </button>
+        {/* Content */}
+        <div className="p-6 overflow-y-auto max-h-[70vh]">
+          {isTriple ? (
+            // Vista para tarjeta triple - mostrar cubos separados
+            <div className="space-y-8">
+              {cubes.map((cube, cubeIndex) => (
+                <div key={cubeIndex} className="border border-white/30 rounded-lg p-4 bg-white/50 backdrop-blur-sm">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <span className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-medium">
+                      Cubo {cubeIndex + 1}
+                    </span>
+                    <span className="text-sm text-gray-500">4 espacios</span>
+                  </h4>
+                  
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    {cube.map((space, spaceIndex) => (
+                      <div key={spaceIndex} className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+                        {space.photo ? (
+                          <div className="relative w-full h-full">
+                            <img
+                              src={URL.createObjectURL(space.photo)}
+                              alt={`Cubo ${cubeIndex + 1} - Espacio ${space.position}`}
+                              className="w-full h-full object-cover"
+                            />
+                            {space.message && (
+                              <div className="absolute bottom-0 left-0 right-0 bg-black/70 backdrop-blur-sm text-white p-2">
+                                <p className="text-xs leading-tight line-clamp-2">
+                                  {space.message}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                            {space.message ? (
+                              <div className="text-center p-2">
+                                <p className="text-xs text-gray-700 leading-relaxed">
+                                  {space.message}
+                                </p>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="w-8 h-8 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center mb-1">
+                                  <span className="text-lg">📷</span>
+                                </div>
+                                <p className="text-xs">Espacio {space.position}</p>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
-                </>
-              )}
+                </div>
+              ))}
             </div>
-            
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleZoomOut}
-                className="p-2 bg-white/70 hover:bg-white rounded-lg transition-colors"
-                title="Alejar"
-              >
-                <ZoomOut className="w-4 h-4" />
-              </button>
-              <button
-                onClick={handleZoomIn}
-                className="p-2 bg-white/70 hover:bg-white rounded-lg transition-colors"
-                title="Acercar"
-              >
-                <ZoomIn className="w-4 h-4" />
-              </button>
-              <button
-                onClick={handleRotate}
-                className="p-2 bg-white/70 hover:bg-white rounded-lg transition-colors"
-                title="Rotar"
-              >
-                <RotateCw className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* 3D Preview */}
-        <div className="p-8 min-h-[400px] flex items-center justify-center bg-gradient-to-br from-gray-50/50 to-gray-100/50">
-          <div 
-            className="relative"
-            style={{
-              transform: `scale(${scale})`,
-              transition: 'transform 0.3s ease',
-            }}
-          >
-            {/* Cube Container */}
-            <div
-              className="relative preserve-3d"
-              style={{
-                width: '200px',
-                height: '200px',
-                transformStyle: 'preserve-3d',
-                transform: `rotateY(${rotationY}deg) rotateX(-10deg)`,
-                transition: 'transform 0.6s ease',
-              }}
-            >
-              {/* Cube Faces */}
-              {cubes[currentCube]?.map((space, faceIndex) => {
-                const faceTransforms = [
-                  'translateZ(100px)', // front
-                  'rotateY(90deg) translateZ(100px)', // right
-                  'rotateY(180deg) translateZ(100px)', // back
-                  'rotateY(-90deg) translateZ(100px)', // left
-                ];
-
-                return (
-                  <div
-                    key={faceIndex}
-                    className="absolute w-full h-full border-2 border-white/30 rounded-lg overflow-hidden shadow-lg"
-                    style={{
-                      transform: faceTransforms[faceIndex],
-                      backfaceVisibility: 'hidden',
-                    }}
-                  >
+          ) : (
+            // Vista para tarjeta simple - mostrar grid único
+            <div>
+              <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <span className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm font-medium">
+                  Tarjeta Simple
+                </span>
+                <span className="text-sm text-gray-500">4 espacios</span>
+              </h4>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {cubes[0]?.map((space, spaceIndex) => (
+                  <div key={spaceIndex} className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
                     {space.photo ? (
                       <div className="relative w-full h-full">
                         <img
                           src={URL.createObjectURL(space.photo)}
-                          alt={`Cara ${faceIndex + 1}`}
+                          alt={`Espacio ${space.position}`}
                           className="w-full h-full object-cover"
                         />
                         {space.message && (
@@ -187,41 +156,42 @@ export function ProductPreviewModal({ isOpen, onClose, product }: ProductPreview
                         )}
                       </div>
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                      <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
                         {space.message ? (
-                          <div className="text-center p-4">
-                            <p className="text-sm text-gray-700 leading-relaxed">
+                          <div className="text-center p-2">
+                            <p className="text-xs text-gray-700 leading-relaxed">
                               {space.message}
                             </p>
                           </div>
                         ) : (
-                          <div className="text-center text-gray-400">
-                            <div className="w-12 h-12 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center mb-2">
-                              <span className="text-2xl">📷</span>
+                          <>
+                            <div className="w-8 h-8 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center mb-1">
+                              <span className="text-lg">📷</span>
                             </div>
-                            <p className="text-xs">Sin contenido</p>
-                          </div>
+                            <p className="text-xs">Espacio {space.position}</p>
+                          </>
                         )}
                       </div>
                     )}
                   </div>
-                );
-              })}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Instructions */}
+        {/* Footer con información */}
         <div className="p-4 bg-white/50 border-t border-white/30">
           <div className="text-center">
             <p className="text-sm text-gray-600">
-              🎯 Usa los controles para rotar, hacer zoom y navegar entre cubos
+              {isTriple 
+                ? `🎯 Tarjeta triple: ${cubes.length} cubos con 4 espacios cada uno`
+                : '🎯 Tarjeta simple: 1 cubo con 4 espacios'
+              }
             </p>
-            {totalCubes > 1 && (
-              <p className="text-xs text-gray-500 mt-1">
-                Estás viendo el cubo {currentCube + 1} de {totalCubes}
-              </p>
-            )}
+            <p className="text-xs text-gray-500 mt-1">
+              Las fotos y mensajes se imprimirán en el orden mostrado
+            </p>
           </div>
         </div>
       </motion.div>
