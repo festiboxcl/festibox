@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, ShoppingCart, CreditCard, Package, Eye, Minus, Plus } from 'lucide-react';
 import { useSound } from '../hooks/useSound';
 import { animations } from '../utils/animations';
-import type { ShoppingCartItem, CartItem } from '../types';
+import type { ShoppingCartItem, CartItem, UploadedImage } from '../types';
 import type { ShippingOption, ShippingAddress } from '../services/shippingService';
 import { ShippingModal } from './ShippingModal';
 import { ProductPreviewModal } from './ProductPreviewModal';
@@ -154,30 +154,67 @@ export function ShoppingCartComponent({
                       onPreview={(item: ShoppingCartItem) => {
                         console.log('📦 Item original del carrito:', item);
                         console.log('📸 Fotos:', item.photos);
-                        console.log('💬 Mensajes:', item.messages);
+                        console.log('� Primera foto (estructura):', item.photos[0]);
+                        console.log('�💬 Mensajes:', item.messages);
                         console.log('🏷️ Producto:', item.product);
                         
-                        // Convertir ShoppingCartItem a CartItem
-                        const cartItem: CartItem = {
-                          id: item.id,
-                          product: item.product,
-                          images: item.photos.map((photo: File, index: number) => ({
-                            id: `photo-${index}`,
-                            file: photo,
-                            preview: URL.createObjectURL(photo),
-                            position: index + 1
-                          })),
-                          quantity: item.quantity,
-                          customizations: {
-                            messages: item.messages,
-                            configuration: item.configuration
-                          }
-                        };
+                        // Verificar la estructura de las fotos antes de usarlas
+                        const validPhotos = item.photos.filter(photo => photo instanceof File);
+                        console.log('✅ Fotos válidas (File objects):', validPhotos);
                         
-                        console.log('🔄 CartItem convertido:', cartItem);
-                        setPreviewProduct(cartItem);
-                        setShowPreviewModal(true);
-                        console.log('✅ Modal debería abrirse ahora');
+                        try {
+                          // Convertir ShoppingCartItem a CartItem
+                          const cartItem: CartItem = {
+                            id: item.id,
+                            product: item.product,
+                            images: item.photos.map((photo: any, index: number) => {
+                              // Si es un File, usar directamente
+                              if (photo instanceof File) {
+                                return {
+                                  id: `photo-${index}`,
+                                  file: photo,
+                                  preview: URL.createObjectURL(photo),
+                                  position: index + 1
+                                };
+                              }
+                              // Si tiene una propiedad file, usar esa
+                              else if (photo && photo.file && photo.file instanceof File) {
+                                return {
+                                  id: `photo-${index}`,
+                                  file: photo.file,
+                                  preview: URL.createObjectURL(photo.file),
+                                  position: index + 1
+                                };
+                              }
+                              // Si tiene una URL de preview
+                              else if (photo && photo.preview) {
+                                return {
+                                  id: `photo-${index}`,
+                                  file: photo.file || photo, // Intentar usar el file o el objeto completo
+                                  preview: photo.preview,
+                                  position: index + 1
+                                };
+                              }
+                              // Caso fallback
+                              else {
+                                console.warn('⚠️ Foto con estructura no reconocida:', photo);
+                                return null;
+                              }
+                            }).filter(Boolean) as UploadedImage[], // Filtrar elementos null y type assertion
+                            quantity: item.quantity,
+                            customizations: {
+                              messages: item.messages,
+                              configuration: item.configuration
+                            }
+                          };
+                          
+                          console.log('🔄 CartItem convertido:', cartItem);
+                          setPreviewProduct(cartItem);
+                          setShowPreviewModal(true);
+                          console.log('✅ Modal debería abrirse ahora');
+                        } catch (error) {
+                          console.error('❌ Error al procesar fotos:', error);
+                        }
                       }}
                     />
                   ))
