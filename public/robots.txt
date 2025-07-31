@@ -2,7 +2,7 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://www.festibox.cl/sitemap.xml
+Sitemap: https://festibox.vercel.app/sitemap.xml
 
 # Optimización para bots
 Crawl-delay: 1
