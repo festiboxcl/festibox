@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ShoppingCart, CreditCard, Package, Eye, Minus, Plus } from 'lucide-react';
 import { useSound } from '../hooks/useSound';
@@ -32,6 +32,13 @@ export function ShoppingCartComponent({
   const [shippingAddress, setShippingAddress] = useState<ShippingAddress | undefined>();
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [previewProduct, setPreviewProduct] = useState<CartItem | null>(null);
+
+  // Debug del estado del modal
+  useEffect(() => {
+    console.log('🔄 Estado del modal cambió:');
+    console.log('  showPreviewModal:', showPreviewModal);
+    console.log('  previewProduct:', previewProduct);
+  }, [showPreviewModal, previewProduct]);
 
   // Calcular totales
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -145,6 +152,11 @@ export function ShoppingCartComponent({
                       formatPrice={formatPrice}
                       playHover={playHover}
                       onPreview={(item: ShoppingCartItem) => {
+                        console.log('📦 Item original del carrito:', item);
+                        console.log('📸 Fotos:', item.photos);
+                        console.log('💬 Mensajes:', item.messages);
+                        console.log('🏷️ Producto:', item.product);
+                        
                         // Convertir ShoppingCartItem a CartItem
                         const cartItem: CartItem = {
                           id: item.id,
@@ -161,8 +173,11 @@ export function ShoppingCartComponent({
                             configuration: item.configuration
                           }
                         };
+                        
+                        console.log('🔄 CartItem convertido:', cartItem);
                         setPreviewProduct(cartItem);
                         setShowPreviewModal(true);
+                        console.log('✅ Modal debería abrirse ahora');
                       }}
                     />
                   ))
@@ -265,6 +280,7 @@ export function ShoppingCartComponent({
             <ProductPreviewModal
               isOpen={showPreviewModal}
               onClose={() => {
+                console.log('🔒 Cerrando modal de preview');
                 setShowPreviewModal(false);
                 setPreviewProduct(null);
               }}

@@ -8,10 +8,22 @@ interface ProductPreviewModalProps {
 }
 
 export function ProductPreviewModal({ isOpen, onClose, product }: ProductPreviewModalProps) {
-  if (!isOpen) return null;
+  // Debug completo
+  console.log('🎭 ProductPreviewModal render');
+  console.log('🔓 isOpen:', isOpen);
+  console.log('📦 Product data received:', product);
+  
+  if (!isOpen) {
+    console.log('❌ Modal cerrado, no renderizando');
+    return null;
+  }
 
-  // Debug para ver la estructura de datos
-  console.log('Product data in modal:', product);
+  if (!product) {
+    console.log('❌ No hay producto, no renderizando');
+    return null;
+  }
+
+  console.log('✅ Modal abierto y con producto, renderizando...');
 
   // Organizar fotos y mensajes por cubos
   const organizeContentByCubes = () => {
@@ -43,7 +55,7 @@ export function ProductPreviewModal({ isOpen, onClose, product }: ProductPreview
   const isTriple = cubes.length > 1;
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
       <motion.div
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
