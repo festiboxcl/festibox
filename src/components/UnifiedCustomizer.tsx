@@ -3,11 +3,12 @@ import { Upload, RotateCcw, Target, Trash2, Camera, MessageSquare, Edit3, MouseP
 import { useDropzone } from 'react-dropzone';
 import heic2any from 'heic2any';
 import { useSound } from '../hooks/useSound';
+import { cropImageToSquare } from '../utils/imageProcessing';
 import type { Product, ProductConfiguration } from '../types';
 
 interface UnifiedCustomizerProps {
   product: Product;
-  onComplete: (config: ProductConfiguration, images: File[], messages: string[]) => void;
+  onComplete: (config: ProductConfiguration, images: File[], messages: string[]) => Promise<void>;
   onBack: () => void;
 }
 
@@ -314,7 +315,7 @@ export function UnifiedCustomizer({ product, onComplete, onBack }: UnifiedCustom
   const isFullyComplete = isComplete && (!requiresBoxMessage || (requiresBoxMessage && boxMessage.trim() !== ''));
 
   // Función para completar la personalización
-  const handleComplete = () => {
+  const handleComplete = async () => {
     if (!isFullyComplete) {
       playError();
       return;
@@ -330,10 +331,31 @@ export function UnifiedCustomizer({ product, onComplete, onBack }: UnifiedCustom
       boxMessage: requiresBoxMessage ? boxMessage.trim() : undefined
     };
 
-    // Recopilar fotos
-    const photos = photoSpaces
+    // Recopilar fotos con información de posicionamiento
+    const photosWithPosition = photoSpaces
       .filter(space => space.content instanceof File)
-      .map(space => space.content as File);
+      .map(space => ({
+        file: space.content as File,
+        imagePosition: space.imagePosition
+      }));
+
+    // Procesar fotos para generar versiones cropeadas si es necesario
+    const processPhotos = async () => {
+      const processedPhotos = await Promise.all(
+        photosWithPosition.map(async ({ file, imagePosition }) => {
+          // Si tiene posición personalizada, generar crop cuadrado
+          if (imagePosition && (imagePosition.x !== 50 || imagePosition.y !== 50)) {
+            return await cropImageToSquare(file, imagePosition);
+          }
+          // Si no tiene posición personalizada, generar crop centrado por defecto
+          return await cropImageToSquare(file, { x: 50, y: 50 });
+        })
+      );
+      return processedPhotos;
+    };
+
+    // Generar fotos finales (cropeadas y cuadradas para impresión)
+    const photos = await processPhotos();
 
     // Recopilar mensajes
     const messages = messageSpaces
@@ -346,7 +368,7 @@ export function UnifiedCustomizer({ product, onComplete, onBack }: UnifiedCustom
     }
 
     playSuccess();
-    onComplete(config, photos, messages);
+    await onComplete(config, photos, messages);
   };
 
   // Calcular espacios por cubo (4 espacios por cubo)

@@ -238,7 +238,7 @@ function App() {
     setPendingProduct(null);
   };
 
-  const handleCustomizationComplete = (config: ProductConfiguration, photos: File[], messages: string[]) => {
+  const handleCustomizationComplete = async (config: ProductConfiguration, photos: File[], messages: string[]) => {
     setProductConfiguration(config);
     
     // Convertir Files a UploadedImages para compatibilidad

@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import FlowService from '../services/flowService';
+import { compressImageForPrint } from '../utils/imageProcessing';
 import type { 
   ShoppingCartItem, 
   OrderDetails 
@@ -20,52 +21,11 @@ export function useShoppingCart() {
   
   const flowService = new FlowService();
 
-  // Comprimir imagen antes de guardar
-  const compressImage = (file: File, quality: number = 0.7): Promise<File> => {
-    return new Promise((resolve) => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d')!;
-      const img = new Image();
-      
-      img.onload = () => {
-        // Reducir tamaño manteniendo aspect ratio
-        const maxSize = 800;
-        let { width, height } = img;
-        
-        if (width > height && width > maxSize) {
-          height = (height * maxSize) / width;
-          width = maxSize;
-        } else if (height > maxSize) {
-          width = (width * maxSize) / height;
-          height = maxSize;
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        canvas.toBlob((blob) => {
-          if (blob) {
-            const compressedFile = new File([blob], file.name, {
-              type: 'image/jpeg',
-              lastModified: Date.now()
-            });
-            resolve(compressedFile);
-          } else {
-            resolve(file); // Fallback al archivo original
-          }
-        }, 'image/jpeg', quality);
-      };
-      
-      img.src = URL.createObjectURL(file);
-    });
-  };
-
   // Convertir File a Base64 comprimido
   const fileToBase64 = async (file: File): Promise<PhotoData> => {
     try {
-      // Comprimir primero si es imagen grande
-      const compressedFile = await compressImage(file, 0.8);
+      // Comprimir con mayor calidad para productos impresos
+      const compressedFile = await compressImageForPrint(file, 0.92);
       
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -271,7 +231,7 @@ export function useShoppingCart() {
           const sizeMB = new Blob([cartData]).size / (1024 * 1024);
           console.log(`💾 Tamaño del carrito: ${sizeMB.toFixed(2)}MB`);
           
-          if (sizeMB > 4) { // Límite de 4MB
+          if (sizeMB > 8) { // Aumentado límite de 4MB a 8MB para mejor calidad
             console.warn('⚠️ Carrito muy grande, guardando solo metadatos');
             // Guardar solo la estructura sin las imágenes como fallback
             const lightweightCart = cartItems.map(item => ({
