@@ -5,10 +5,17 @@ import type {
 
 class FlowService {
   private baseUrl: string;
+  private isDemoMode: boolean;
 
   constructor() {
     // En desarrollo usa localhost, en producción usa el dominio actual
     this.baseUrl = window.location.origin;
+    // Modo demo para testing - actívalo temporalmente
+    this.isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true' || false;
+    
+    if (this.isDemoMode) {
+      console.log('🎮 MODO DEMO ACTIVADO - No se procesarán pagos reales');
+    }
   }
 
   /**
@@ -26,6 +33,18 @@ class FlowService {
 
     if (orderDetails.total < 100) {
       throw new Error('El monto mínimo para un pago es $100 CLP');
+    }
+
+    // 🎮 MODO DEMO: Simular respuesta exitosa
+    if (this.isDemoMode) {
+      console.log('🎮 DEMO: Simulando creación de pago exitosa');
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simular delay de red
+      
+      return {
+        url: '#demo-payment', // URL falsa para demo
+        token: `demo-token-${Date.now()}`,
+        flowOrder: Math.floor(Math.random() * 1000000)
+      };
     }
 
     const response = await fetch(`${this.baseUrl}/api/flow/create-payment`, {
@@ -66,14 +85,27 @@ class FlowService {
     };
   }
 
-  /**
-   * Verificar estado del pago usando nuestro backend
+    /**
+   * Verificar estado de un pago
    * @param token - Token del pago
    * @returns Promise con estado del pago
    */
   async getPaymentStatus(token: string): Promise<any> {
     if (!token) {
       throw new Error('Token es requerido');
+    }
+
+    // 🎮 MODO DEMO: Simular pago exitoso
+    if (this.isDemoMode && token.startsWith('demo-token-')) {
+      console.log('🎮 DEMO: Simulando verificación de pago exitosa');
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simular delay
+      
+      return {
+        status: 'PAID',
+        amount: 1000, // Monto simulado
+        flowOrder: Math.floor(Math.random() * 1000000),
+        paymentDate: new Date().toISOString()
+      };
     }
 
     const response = await fetch(`${this.baseUrl}/api/flow/payment-status?token=${token}`, {
@@ -101,6 +133,23 @@ class FlowService {
    * @param paymentResponse - Respuesta de creación de pago
    */
   redirectToPayment(paymentResponse: FlowPaymentResponse): void {
+    // 🎮 MODO DEMO: Simular pago exitoso sin redirección
+    if (this.isDemoMode) {
+      console.log('🎮 DEMO: Simulando redirección a Flow y pago exitoso');
+      
+      // Agregar el token a localStorage para debugging
+      localStorage.setItem('festibox-last-payment-token', paymentResponse.token);
+      
+      // Simular que el usuario completó el pago exitosamente
+      setTimeout(() => {
+        const mockSuccessUrl = `${window.location.origin}/?status=success&token=${paymentResponse.token}`;
+        console.log('🎮 DEMO: Simulando retorno exitoso de Flow');
+        window.location.href = mockSuccessUrl;
+      }, 2000); // Simular 2 segundos de "procesamiento"
+      
+      return;
+    }
+    
     const flowUrl = `${paymentResponse.url}?token=${paymentResponse.token}`;
     console.log('🚀 Redirigiendo a Flow:', flowUrl);
     

@@ -10,6 +10,7 @@ import { ShoppingCartComponent } from './components/ShoppingCart';
 import { CheckoutModal } from './components/CheckoutModal';
 import { FAQSection } from './components/FAQSection';
 import { SEO, useProductSEO } from './components/SEO';
+import DemoModeIndicator from './components/DemoModeIndicator';
 import { ShoppingCart, Heart, Camera, Palette, Gift, Instagram, MessageCircle, Mail, HelpCircle } from 'lucide-react';
 // import { assets } from './assets';
 import { useProductWithOptions } from './hooks/useProductWithOptions';
@@ -319,6 +320,9 @@ function App() {
     <div className="min-h-screen bg-gray-50 overflow-x-hidden max-w-full">
       {/* SEO dinámico */}
       <SEO {...productSEO} />
+      
+      {/* Indicador de modo demo */}
+      <DemoModeIndicator />
       
       {/* Header mejorado sin slogan */}
       <header className="bg-white shadow-sm border-b sticky top-0 z-50">
