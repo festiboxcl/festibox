@@ -122,6 +122,22 @@ export interface OrderDetails {
   shipping: number;
   total: number;
   customerEmail: string;
+  shippingOption?: {
+    id: string;
+    name: string;
+    type: string;
+    price: number;
+    deliveryTime: string;
+    description: string;
+  };
+  shippingAddress?: {
+    commune: string;
+    address: string;
+    reference?: string;
+    receiverName: string;
+    receiverPhone: string;
+    receiverEmail: string;
+  };
 }
 
 export interface OrderInfo {
@@ -133,6 +149,22 @@ export interface OrderInfo {
     total: number;
   };
   customerEmail: string;
+  shippingOption?: {
+    id: string;
+    name: string;
+    type: string;
+    price: number;
+    deliveryTime: string;
+    description: string;
+  };
+  shippingAddress?: {
+    commune: string;
+    address: string;
+    reference?: string;
+    receiverName: string;
+    receiverPhone: string;
+    receiverEmail: string;
+  };
   flowOrder: number;
   token: string;
   createdAt: string;

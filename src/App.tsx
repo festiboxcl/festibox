@@ -270,15 +270,41 @@ function App() {
     handleAddToCart();
   };
 
-  // Manejar checkout desde el carrito
-  const handleCartCheckout = async (_items: any[]) => {
-    setShowCheckoutModal(true);
+  // Manejar checkout desde el carrito con envío
+  const handleCartCheckout = async (
+    _items: any[], 
+    shippingOption: any, 
+    shippingAddress?: any
+  ) => {
+    try {
+      // Solicitar email al usuario
+      const email = prompt('Por favor ingresa tu email para continuar con el pago:');
+      if (!email) {
+        throw new Error('Email es requerido para continuar');
+      }
+
+      await processCheckout(email, shippingOption, shippingAddress);
+      // El usuario será redirigido a Flow automáticamente
+    } catch (error) {
+      console.error('Error en checkout:', error);
+      alert('Error al procesar el pago. Por favor intenta nuevamente.');
+    }
   };
 
-  // Procesar checkout con email
+  // Procesar checkout con email (para compatibilidad hacia atrás)
   const handleCheckoutWithEmail = async (email: string) => {
     try {
-      await processCheckout(email);
+      // Para el checkout directo, usar envío estándar por defecto
+      const defaultShipping = {
+        id: 'pickup-free',
+        name: 'Retiro en tienda',
+        type: 'pickup' as const,
+        price: 0,
+        deliveryTime: '1-2 días hábiles',
+        description: 'Retira tu pedido gratis en nuestra tienda'
+      };
+      
+      await processCheckout(email, defaultShipping);
       setShowCheckoutModal(false);
       // El usuario será redirigido a Flow automáticamente
     } catch (error) {

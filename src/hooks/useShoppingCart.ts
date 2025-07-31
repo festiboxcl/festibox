@@ -4,6 +4,7 @@ import type {
   ShoppingCartItem, 
   OrderDetails 
 } from '../types';
+import type { ShippingOption, ShippingAddress } from '../services/shippingService';
 
 export function useShoppingCart() {
   const [cartItems, setCartItems] = useState<ShoppingCartItem[]>([]);
@@ -66,7 +67,14 @@ export function useShoppingCart() {
     localStorage.removeItem('festibox-cart');
   }, []);
 
-  // Calcular totales
+  // Calcular totales con envío dinámico
+  const getCartTotals = useCallback((shippingCost = 0) => ({
+    subtotal: cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+    shipping: shippingCost,
+    total: cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0) + shippingCost
+  }), [cartItems]);
+
+  // Mantener compatibilidad con el cálculo anterior
   const cartTotals = {
     subtotal: cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0),
     get shipping() {
@@ -77,8 +85,12 @@ export function useShoppingCart() {
     }
   };
 
-  // Procesar checkout con Flow
-  const processCheckout = useCallback(async (customerEmail: string) => {
+  // Procesar checkout con Flow y datos de envío
+  const processCheckout = useCallback(async (
+    customerEmail: string, 
+    shippingOption: ShippingOption, 
+    shippingAddress?: ShippingAddress
+  ) => {
     if (cartItems.length === 0) {
       throw new Error('El carrito está vacío');
     }
@@ -87,15 +99,23 @@ export function useShoppingCart() {
       throw new Error('Email del cliente es requerido');
     }
 
+    if (!shippingOption) {
+      throw new Error('Método de envío es requerido');
+    }
+
     setIsProcessingPayment(true);
 
     try {
+      const totals = getCartTotals(shippingOption.price);
+
       const orderDetails: OrderDetails = {
         items: cartItems,
-        subtotal: cartTotals.subtotal,
-        shipping: cartTotals.shipping,
-        total: cartTotals.total,
-        customerEmail: customerEmail.trim()
+        subtotal: totals.subtotal,
+        shipping: totals.shipping,
+        total: totals.total,
+        customerEmail: customerEmail.trim(),
+        shippingOption,
+        shippingAddress
       };
 
       // Crear pago en Flow
@@ -105,8 +125,10 @@ export function useShoppingCart() {
       const orderInfo = {
         commerceOrder: `FESTIBOX-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         items: cartItems,
-        totals: cartTotals,
+        totals,
         customerEmail,
+        shippingOption,
+        shippingAddress,
         flowOrder: paymentResponse.flowOrder,
         token: paymentResponse.token,
         createdAt: new Date().toISOString()
@@ -123,7 +145,7 @@ export function useShoppingCart() {
     } finally {
       setIsProcessingPayment(false);
     }
-  }, [cartItems, cartTotals, flowService]);
+  }, [cartItems, flowService, getCartTotals]);
 
   // Verificar estado del pago
   const verifyPayment = useCallback(async (token: string) => {

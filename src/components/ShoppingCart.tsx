@@ -4,6 +4,8 @@ import { X, ShoppingCart, CreditCard, Package, Eye, Minus, Plus } from 'lucide-r
 import { useSound } from '../hooks/useSound';
 import { animations } from '../utils/animations';
 import type { ShoppingCartItem } from '../types';
+import type { ShippingOption, ShippingAddress } from '../services/shippingService';
+import { ShippingModal } from './ShippingModal';
 
 interface ShoppingCartProps {
   isOpen: boolean;
@@ -11,7 +13,7 @@ interface ShoppingCartProps {
   cartItems: ShoppingCartItem[];
   onUpdateQuantity: (itemId: string, quantity: number) => void;
   onRemoveItem: (itemId: string) => void;
-  onCheckout: (cartItems: ShoppingCartItem[]) => Promise<void>;
+  onCheckout: (cartItems: ShoppingCartItem[], shippingOption: ShippingOption, shippingAddress?: ShippingAddress) => Promise<void>;
 }
 
 export function ShoppingCartComponent({ 
@@ -24,24 +26,41 @@ export function ShoppingCartComponent({
 }: ShoppingCartProps) {
   const { playClick, playSuccess, playHover } = useSound();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [showShippingModal, setShowShippingModal] = useState(false);
+  const [selectedShipping, setSelectedShipping] = useState<ShippingOption | null>(null);
+  const [shippingAddress, setShippingAddress] = useState<ShippingAddress | undefined>();
 
   // Calcular totales
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const shipping = subtotal > 50000 ? 0 : 5000; // Envío gratis sobre $50.000
-  const total = subtotal + shipping;
+  const shippingCost = selectedShipping?.price || 0;
+  const total = subtotal + shippingCost;
 
   const handleCheckout = async () => {
+    if (!selectedShipping) {
+      // Mostrar modal de envío si no se ha seleccionado
+      setShowShippingModal(true);
+      playClick();
+      return;
+    }
+
     setIsCheckingOut(true);
     playClick();
     
     try {
-      await onCheckout(cartItems);
+      await onCheckout(cartItems, selectedShipping, shippingAddress);
       playSuccess();
     } catch (error) {
       console.error('Error en checkout:', error);
     } finally {
       setIsCheckingOut(false);
     }
+  };
+
+  const handleShippingSelected = (option: ShippingOption, address?: ShippingAddress) => {
+    setSelectedShipping(option);
+    setShippingAddress(address);
+    setShowShippingModal(false);
+    playSuccess();
   };
 
   const handleQuantityChange = (itemId: string, newQuantity: number) => {
@@ -136,16 +155,44 @@ export function ShoppingCartComponent({
                       <span className="text-gray-600">Subtotal:</span>
                       <span className="font-medium">{formatPrice(subtotal)}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
+                    
+                    {/* Shipping Selection */}
+                    <div className="flex justify-between text-sm items-center">
                       <span className="text-gray-600">Envío:</span>
-                      <span className="font-medium">
-                        {shipping === 0 ? (
-                          <span className="text-green-600">¡Gratis!</span>
+                      <div className="flex items-center gap-2">
+                        {selectedShipping ? (
+                          <>
+                            <span className="font-medium">
+                              {selectedShipping.price === 0 ? (
+                                <span className="text-green-600">¡Gratis!</span>
+                              ) : (
+                                formatPrice(selectedShipping.price)
+                              )}
+                            </span>
+                            <button
+                              onClick={() => setShowShippingModal(true)}
+                              className="text-xs text-primary-600 hover:text-primary-700 underline"
+                            >
+                              cambiar
+                            </button>
+                          </>
                         ) : (
-                          formatPrice(shipping)
+                          <button
+                            onClick={() => setShowShippingModal(true)}
+                            className="text-xs text-primary-600 hover:text-primary-700 underline font-medium"
+                          >
+                            Seleccionar envío
+                          </button>
                         )}
-                      </span>
+                      </div>
                     </div>
+                    
+                    {selectedShipping && (
+                      <div className="text-xs text-gray-500">
+                        {selectedShipping.name} - {selectedShipping.deliveryTime}
+                      </div>
+                    )}
+                    
                     <div className="border-t pt-2 flex justify-between font-semibold text-lg">
                       <span>Total:</span>
                       <span className="text-primary-600">{formatPrice(total)}</span>
@@ -165,7 +212,7 @@ export function ShoppingCartComponent({
                     whileTap={!isCheckingOut ? { scale: 0.98 } : {}}
                   >
                     <CreditCard className="w-5 h-5" />
-                    {isCheckingOut ? 'Procesando...' : 'Pagar con Flow'}
+                    {isCheckingOut ? 'Procesando...' : selectedShipping ? 'Pagar con Flow' : 'Seleccionar envío'}
                   </motion.button>
 
                   {/* Security Info */}
@@ -177,6 +224,18 @@ export function ShoppingCartComponent({
               )}
             </div>
           </motion.div>
+
+          {/* Shipping Modal */}
+          {cartItems.length > 0 && (
+            <ShippingModal
+              isOpen={showShippingModal}
+              onClose={() => setShowShippingModal(false)}
+              onShippingSelected={handleShippingSelected}
+              productCategory={cartItems[0]?.product.category || 'tarjetas'}
+              productType={'simple'}
+              productName={cartItems.length === 1 ? cartItems[0].product.name : `${cartItems.length} productos`}
+            />
+          )}
         </>
       )}
     </AnimatePresence>
