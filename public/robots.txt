@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://www.festibox.cl/sitemap.xml
+
+# Optimización para bots
+Crawl-delay: 1
+
+# Bloquear archivos innecesarios para SEO
+Disallow: /api/
+Disallow: /*.js$
+Disallow: /*.css$
+Disallow: /node_modules/
+Disallow: /.git/
+
+# Permitir archivos importantes
+Allow: /images/
+Allow: /favicon.ico
+Allow: /favicon.png

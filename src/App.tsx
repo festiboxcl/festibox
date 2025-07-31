@@ -8,6 +8,7 @@ import { CardOptionSelector } from './components/CardOptionSelector';
 import { ProductConfirmationModal } from './components/ProductConfirmationModal';
 import { ShoppingCartComponent } from './components/ShoppingCart';
 import { CheckoutModal } from './components/CheckoutModal';
+import { SEO, useProductSEO } from './components/SEO';
 import { ShoppingCart, Heart, Camera, Palette, Gift, Instagram, MessageCircle, Mail } from 'lucide-react';
 // import { assets } from './assets';
 import { useProductWithOptions } from './hooks/useProductWithOptions';
@@ -186,6 +187,9 @@ function App() {
     processCheckout
   } = useShoppingCart();
   
+  // SEO dinámico basado en el producto seleccionado
+  const productSEO = useProductSEO(selectedBaseProduct);
+  
   // Usar el hook para manejar las opciones de tarjeta
   const { 
     product: selectedProduct, 
@@ -285,6 +289,9 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 overflow-x-hidden max-w-full">
+      {/* SEO dinámico */}
+      <SEO {...productSEO} />
+      
       {/* Header mejorado sin slogan */}
       <header className="bg-white shadow-sm border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
