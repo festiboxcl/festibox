@@ -1,6 +1,12 @@
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
 
+interface CubeSpace {
+  type: 'photo' | 'message' | 'empty';
+  content: any;
+  position: number;
+}
+
 interface ProductPreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -25,29 +31,80 @@ export function ProductPreviewModal({ isOpen, onClose, product }: ProductPreview
 
   console.log('✅ Modal abierto y con producto, renderizando...');
 
-  // Organizar fotos y mensajes por cubos
-  const organizeContentByCubes = () => {
-    const cubes = [];
-    const isTriple = product.product?.name?.toLowerCase()?.includes('triple') || false;
-    const cubeCount = isTriple ? 3 : 1;
-    const spacesPerCube = 4;
-
-    // Extraer fotos y mensajes de la estructura correcta
+  // Organizar fotos y mensajes por cubos usando la configuración
+  const organizeContentByCubes = (): CubeSpace[][] => {
+    const cubes: CubeSpace[][] = [];
+    
+    // Extraer datos
     const photos = product.images?.map((img: any) => img.file) || [];
     const messages = product.customizations?.messages || [];
-
-    for (let cubeIndex = 0; cubeIndex < cubeCount; cubeIndex++) {
-      const cubeSpaces = [];
-      for (let spaceIndex = 0; spaceIndex < spacesPerCube; spaceIndex++) {
-        const globalIndex = cubeIndex * spacesPerCube + spaceIndex;
+    const configuration = product.customizations?.configuration || product.configuration;
+    
+    console.log('🔧 Configuración:', configuration);
+    console.log('📸 Fotos disponibles:', photos.length);
+    console.log('💬 Mensajes disponibles:', messages.length);
+    
+    if (!configuration || !configuration.cubes) {
+      console.warn('⚠️ No hay configuración de cubos, usando fallback');
+      // Fallback para productos sin configuración clara
+      const isTriple = product.product?.name?.toLowerCase()?.includes('triple') || false;
+      const cubeCount = isTriple ? 3 : 1;
+      const spacesPerCube = 4;
+      
+      for (let cubeIndex = 0; cubeIndex < cubeCount; cubeIndex++) {
+        const cubeSpaces: CubeSpace[] = [];
+        for (let spaceIndex = 0; spaceIndex < spacesPerCube; spaceIndex++) {
+          const globalIndex = cubeIndex * spacesPerCube + spaceIndex;
+          cubeSpaces.push({
+            type: photos[globalIndex] ? 'photo' as const : (messages[globalIndex] ? 'message' as const : 'empty' as const),
+            content: photos[globalIndex] || messages[globalIndex] || null,
+            position: spaceIndex + 1,
+          });
+        }
+        cubes.push(cubeSpaces);
+      }
+      return cubes;
+    }
+    
+    // Usar configuración real
+    let photoIndex = 0;
+    let messageIndex = 0;
+    
+    configuration.cubes.forEach((cubeConfig: any) => {
+      const cubeSpaces: CubeSpace[] = [];
+      
+      // Agregar fotos para este cubo
+      for (let i = 0; i < cubeConfig.photos && photoIndex < photos.length; i++) {
         cubeSpaces.push({
-          photo: photos[globalIndex] || null,
-          message: messages[globalIndex] || '',
-          position: spaceIndex + 1,
+          type: 'photo' as const,
+          content: photos[photoIndex],
+          position: cubeSpaces.length + 1,
+        });
+        photoIndex++;
+      }
+      
+      // Agregar mensajes para este cubo
+      for (let i = 0; i < cubeConfig.messages && messageIndex < messages.length; i++) {
+        cubeSpaces.push({
+          type: 'message' as const,
+          content: messages[messageIndex],
+          position: cubeSpaces.length + 1,
+        });
+        messageIndex++;
+      }
+      
+      // Rellenar espacios vacíos hasta 4
+      while (cubeSpaces.length < 4) {
+        cubeSpaces.push({
+          type: 'empty' as const,
+          content: null,
+          position: cubeSpaces.length + 1,
         });
       }
+      
       cubes.push(cubeSpaces);
-    }
+    });
+    
     return cubes;
   };
 
@@ -98,39 +155,36 @@ export function ProductPreviewModal({ isOpen, onClose, product }: ProductPreview
                   </h4>
                   
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    {cube.map((space, spaceIndex) => (
-                      <div key={spaceIndex} className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
-                        {space.photo ? (
-                          <div className="relative w-full h-full">
-                            <img
-                              src={URL.createObjectURL(space.photo)}
-                              alt={`Cubo ${cubeIndex + 1} - Espacio ${space.position}`}
+                    {cube.map((space: CubeSpace, spaceIndex: number) => (
+                      <div 
+                        key={spaceIndex}
+                        className="aspect-square rounded-lg border-2 border-gray-200 bg-white p-2 flex flex-col items-center justify-center text-center"
+                      >
+                        <div className="text-xs text-gray-500 mb-1">
+                          {space.position}
+                        </div>
+                        
+                        {space.type === 'photo' && space.content && (
+                          <div className="w-full h-full overflow-hidden rounded">
+                            <img 
+                              src={typeof space.content === 'string' ? space.content : URL.createObjectURL(space.content)}
+                              alt={`Foto ${spaceIndex + 1}`}
                               className="w-full h-full object-cover"
                             />
-                            {space.message && (
-                              <div className="absolute bottom-0 left-0 right-0 bg-black/70 backdrop-blur-sm text-white p-2">
-                                <p className="text-xs leading-tight line-clamp-2">
-                                  {space.message}
-                                </p>
-                              </div>
-                            )}
                           </div>
-                        ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
-                            {space.message ? (
-                              <div className="text-center p-2">
-                                <p className="text-xs text-gray-700 leading-relaxed">
-                                  {space.message}
-                                </p>
-                              </div>
-                            ) : (
-                              <>
-                                <div className="w-8 h-8 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center mb-1">
-                                  <span className="text-lg">📷</span>
-                                </div>
-                                <p className="text-xs">Espacio {space.position}</p>
-                              </>
-                            )}
+                        )}
+                        
+                        {space.type === 'message' && space.content && (
+                          <div className="w-full h-full flex items-center justify-center bg-yellow-50 rounded p-1">
+                            <p className="text-xs text-gray-700 break-words">
+                              {space.content}
+                            </p>
+                          </div>
+                        )}
+                        
+                        {space.type === 'empty' && (
+                          <div className="w-full h-full flex items-center justify-center bg-gray-50 rounded border-dashed border-gray-300 border-2">
+                            <span className="text-xs text-gray-400">Vacío</span>
                           </div>
                         )}
                       </div>
@@ -150,39 +204,36 @@ export function ProductPreviewModal({ isOpen, onClose, product }: ProductPreview
               </h4>
               
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {cubes[0]?.map((space, spaceIndex) => (
-                  <div key={spaceIndex} className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
-                    {space.photo ? (
-                      <div className="relative w-full h-full">
-                        <img
-                          src={URL.createObjectURL(space.photo)}
-                          alt={`Espacio ${space.position}`}
+                {cubes[0]?.map((space: CubeSpace, spaceIndex: number) => (
+                  <div 
+                    key={spaceIndex}
+                    className="aspect-square rounded-lg border-2 border-gray-200 bg-white p-2 flex flex-col items-center justify-center text-center"
+                  >
+                    <div className="text-xs text-gray-500 mb-1">
+                      {space.position}
+                    </div>
+                    
+                    {space.type === 'photo' && space.content && (
+                      <div className="w-full h-full overflow-hidden rounded">
+                        <img 
+                          src={typeof space.content === 'string' ? space.content : URL.createObjectURL(space.content)}
+                          alt={`Foto ${spaceIndex + 1}`}
                           className="w-full h-full object-cover"
                         />
-                        {space.message && (
-                          <div className="absolute bottom-0 left-0 right-0 bg-black/70 backdrop-blur-sm text-white p-2">
-                            <p className="text-xs leading-tight line-clamp-2">
-                              {space.message}
-                            </p>
-                          </div>
-                        )}
                       </div>
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
-                        {space.message ? (
-                          <div className="text-center p-2">
-                            <p className="text-xs text-gray-700 leading-relaxed">
-                              {space.message}
-                            </p>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="w-8 h-8 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center mb-1">
-                              <span className="text-lg">📷</span>
-                            </div>
-                            <p className="text-xs">Espacio {space.position}</p>
-                          </>
-                        )}
+                    )}
+                    
+                    {space.type === 'message' && space.content && (
+                      <div className="w-full h-full flex items-center justify-center bg-yellow-50 rounded p-1">
+                        <p className="text-xs text-gray-700 break-words">
+                          {space.content}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {space.type === 'empty' && (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-50 rounded border-dashed border-gray-300 border-2">
+                        <span className="text-xs text-gray-400">Vacío</span>
                       </div>
                     )}
                   </div>

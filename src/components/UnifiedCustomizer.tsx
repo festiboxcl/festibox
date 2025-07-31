@@ -423,13 +423,18 @@ export function UnifiedCustomizer({ product, onComplete, onBack }: UnifiedCustom
         </div>
       )}
 
-      {/* Indicador de conversión HEIC */}
+      {/* Indicador de conversión HEIC - Mobile responsive */}
       {isConvertingHEIC && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg shadow-lg text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-            <p className="text-lg font-semibold text-gray-700">Convirtiendo imagen HEIC...</p>
-            <p className="text-sm text-gray-500 mt-2">Esto puede tomar unos segundos</p>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white/95 backdrop-blur-xl border border-white/20 p-4 sm:p-6 rounded-2xl shadow-2xl text-center max-w-sm w-full"
+               style={{
+                 background: 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.9) 100%)',
+                 backdropFilter: 'blur(20px)',
+                 WebkitBackdropFilter: 'blur(20px)',
+               }}>
+            <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-primary-600 mx-auto mb-3 sm:mb-4"></div>
+            <p className="text-base sm:text-lg font-semibold text-gray-700">Convirtiendo imagen HEIC...</p>
+            <p className="text-xs sm:text-sm text-gray-500 mt-2">Esto puede tomar unos segundos</p>
           </div>
         </div>
       )}
