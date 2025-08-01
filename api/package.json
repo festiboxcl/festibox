@@ -1,6 +1,12 @@
 {
-  "type": "module",
+  "name": "festibox-api",
+  "version": "1.0.0",
+  "description": "API endpoints for FestiBox",
+  "main": "order-confirmation.js",
   "dependencies": {
-    "nodemailer": "^6.9.8"
+    "resend": "^3.5.0"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }
